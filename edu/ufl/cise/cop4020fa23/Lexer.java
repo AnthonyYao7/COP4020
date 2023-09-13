@@ -14,7 +14,9 @@ import static edu.ufl.cise.cop4020fa23.Kind.EOF;
 import edu.ufl.cise.cop4020fa23.exceptions.LexicalException;
 
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 
 
 public class Lexer implements ILexer {
@@ -47,9 +49,27 @@ public class Lexer implements ILexer {
         Kind.ERROR, /* UNEXPECTED */
     };
 
-    static Kind resolve_final_state_name(State state)
-    {
-        return state_to_kind[state.ordinal()];
+
+    static Kind resolve_final_state_name(State state) {return state_to_kind[state.ordinal()];}
+
+    final static private Map<String, Kind> reserved_words= new HashMap<>();
+    static {
+        /* Should probably add another enumeration for reserved words
+           Kind.ERROR is a placeholder for now or something
+         */
+        reserved_words.put("public", Kind.ERROR);
+        reserved_words.put("abstract", Kind.ERROR);
+        reserved_words.put("assert", Kind.ERROR);
+        reserved_words.put("boolean", Kind.ERROR);
+        reserved_words.put("break", Kind.ERROR);
+        reserved_words.put("byte", Kind.ERROR);
+        reserved_words.put("case", Kind.ERROR);
+        reserved_words.put("catch", Kind.ERROR);
+        reserved_words.put("char", Kind.ERROR);
+        reserved_words.put("class", Kind.ERROR);
+        reserved_words.put("const", Kind.ERROR);
+        // Add more reserved words as needed
+
     }
 
 	final static private Character[] op_sep_values = new Character[] {
@@ -72,6 +92,7 @@ public class Lexer implements ILexer {
     {
         return l <= c && c <= u;
     }
+
 
 	interface Transition
 	{
