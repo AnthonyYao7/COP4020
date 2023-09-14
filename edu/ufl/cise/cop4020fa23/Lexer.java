@@ -13,10 +13,7 @@ import static edu.ufl.cise.cop4020fa23.Kind.EOF;
 
 import edu.ufl.cise.cop4020fa23.exceptions.LexicalException;
 
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
+import java.util.*;
 
 
 public class Lexer implements ILexer {
@@ -34,6 +31,18 @@ public class Lexer implements ILexer {
         NUM_LIT_0,
         STR_LIT_1,
         STR_LIT_2,
+        OP_SEP,
+        LEFT_BRACKET,
+        EQUALS,
+        LT,
+        GT,
+        AMP,
+        BAR,
+        STAR,
+        HYPHEN,
+        COLON,
+        
+
         UNEXPECTED,
 	};
 
@@ -73,16 +82,31 @@ public class Lexer implements ILexer {
     }
 
 	final static private Character[] op_sep_values = new Character[] {
-		',', ';', '?', ':', '(', ')', '<', '>', '[', ']',
-		'=', '!', '&', '|', '+', '-', '*', '/', '%', '^'
+		',', ';', '?', '(', ')', ']',
+		'!', '+', '/', '%', '^'
 	};
-	final static private HashSet<Character> op_sep = new HashSet<>(Arrays.asList(op_sep_values));
+	final static private Set<Character> op_sep = new HashSet<>(Arrays.asList(op_sep_values));
+
+    final static private Map<Character, State> two_char_ops = new HashMap<>();
+    static {
+        two_char_ops.put('[', State.LEFT_BRACKET);
+        two_char_ops.put('=', State.EQUALS);
+        two_char_ops.put('<', State.LT);
+        two_char_ops.put('>', State.GT);
+        two_char_ops.put('&', State.AMP);
+        two_char_ops.put('|', State.BAR);
+        two_char_ops.put('*', State.STAR);
+        two_char_ops.put('-', State.HYPHEN);
+        two_char_ops.put(':', State.COLON);
+    }
 
     static boolean is_op_sep(char c)
     {
         return op_sep.contains(c);
     }
 
+    static boolean is_two_char_op(char c) { return two_char_ops.containsKey(c); }
+    
     static boolean is_printable(char c)
     {
         return 32 <= c && c <= 127;
@@ -93,6 +117,9 @@ public class Lexer implements ILexer {
         return l <= c && c <= u;
     }
 
+
+    static boolean is_whitespace(char c) { return c == '\n' || c == '\r' || c == ' '; }
+    static boolean is_newline(char c) { return c == '\n' || c == '\r'; }
 
 	interface Transition
 	{
@@ -125,6 +152,17 @@ public class Lexer implements ILexer {
                     return State.STR_LIT_1;
                 }
 
+                if (is_op_sep(c))
+                {
+                    return State.OP_SEP;
+                }
+
+                if (is_two_char_op(c))
+                {
+                    return two_char_ops.get(c);
+                }
+                
+
                 return State.FINISH;
 			}
 		}, /* FINISH = */ new Transition() {
@@ -135,9 +173,10 @@ public class Lexer implements ILexer {
 			public State apply(char c) {
 
 				if (
-                        between_inclusive(c, 'a', 'z') ||
-                                between_inclusive(c, 'A', 'Z') ||
-                                c == '_')
+                    between_inclusive(c, 'a', 'z') ||
+                    between_inclusive(c, 'A', 'Z') ||
+                    between_inclusive(c, '0', '9') ||
+                    c == '_')
                 {
                     return State.IDENT;
                 }
@@ -176,6 +215,64 @@ public class Lexer implements ILexer {
             public State apply(char c) {
                 return State.FINISH;
             }
+        },/* OP_SEP = */ new Transition() {
+            public State apply(char c) {
+                return State.FINISH;
+            }
+        },/* LEFT_BRACKET = */ new Transition() {
+            public State apply(char c) {
+                if (c == ']')
+                    return State.OP_SEP;
+                return State.FINISH;
+            }
+        },/* EQUALS = */ new Transition() {
+            public State apply(char c) {
+                if (c == '=')
+                    return State.OP_SEP;
+                return State.FINISH;
+            }
+        },/* LT = */ new Transition() {
+            public State apply(char c) {
+                if (c == '=' || c == ':')
+                    return State.OP_SEP;
+                return State.FINISH;
+            }
+        },/* GT = */ new Transition() {
+            public State apply(char c) {
+                if (c == '=')
+                    return State.OP_SEP;
+                return State.FINISH;
+            }
+        },/* AMP = */ new Transition() {
+            public State apply(char c) {
+                if (c == '&')
+                    return State.OP_SEP;
+                return State.FINISH;
+            }
+        },/* BAR = */ new Transition() {
+            public State apply(char c) {
+                if (c == '|')
+                    return State.OP_SEP;
+                return State.FINISH;
+            }
+        },/* STAR = */ new Transition() {
+            public State apply(char c) {
+                if (c == '*')
+                    return State.OP_SEP;
+                return State.FINISH;
+            }
+        },/* HYPHEN = */ new Transition() {
+            public State apply(char c) {
+                if (c == '>')
+                    return State.OP_SEP;
+                return State.FINISH;
+            }
+        },/* COLON = */ new Transition() {
+            public State apply(char c) {
+                if (c == '>')
+                    return State.OP_SEP;
+                return State.FINISH;
+            }
         }
 	};
 
@@ -188,9 +285,22 @@ public class Lexer implements ILexer {
 	@Override
 	public IToken next() throws LexicalException {
 
+        /**
+         * Notes:
+         * Test 11: Should throw lexical exception because number is too large (all 9s)
+         * Test 12: Haven't implemented ops and seps
+         * Test 13: Haven't implemented EOF token
+         * Test 14: Could be because special characters are not implemented yet
+         * Test 15: I might have messed up the transition function for identifiers - yes (but now its becasue havent implemented ops and seps)
+         * Test 16: Special characters
+         */
+        if (pos == input.length())
+            return new Token(EOF, 0, 0, null, new SourceLocation(row, col));
 
 		State cur = State.START, last = State.START;
 		StringBuilder text = new StringBuilder();
+        boolean last_whitespace = false;
+
 
 		while (cur != State.FINISH && pos < input.length())
 		{
@@ -198,15 +308,23 @@ public class Lexer implements ILexer {
 
 			++col;
 
-			if (c == '\n' || c == '\r')
+			if (is_newline(c))
 			{
 				++row;
 				col = 0;
 			}
 
+            if (is_whitespace(c))
+            {
+                last_whitespace = true;
 
+                if (cur == State.START)
+                    continue;
 
-            if (c != ' ' && c != '\n' && c != '\r')
+                last = cur;
+                cur = State.FINISH;
+            }
+            else
             {
                 text.append(c);
                 last = cur;
@@ -215,17 +333,20 @@ public class Lexer implements ILexer {
             }
 		}
 
-        text.deleteCharAt(text.length() - 1);
+        if (!last_whitespace)
+        {
+            text.deleteCharAt(text.length() - 1);
 
-        --pos;
-        --col;
+            --pos;
+            --col;
+        }
 
         String s = text.toString();
 
+        if (s.isEmpty())
+            return new Token(EOF, 0, 0, null, new SourceLocation(row, col));
+
         return new Token(resolve_final_state_name(last), 0, s.length(), s.toCharArray(), new SourceLocation(row, col));
-
-
-//		return new Token(EOF, 0, 0, null, new SourceLocation(1, 1));
 	}
 
 
