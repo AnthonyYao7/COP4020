@@ -41,7 +41,8 @@ public class Lexer implements ILexer {
         STAR,
         HYPHEN,
         COLON,
-        
+        HASH,
+        COMMENT,
 
         UNEXPECTED,
 	};
@@ -98,6 +99,7 @@ public class Lexer implements ILexer {
         two_char_ops.put('*', State.STAR);
         two_char_ops.put('-', State.HYPHEN);
         two_char_ops.put(':', State.COLON);
+        two_char_ops.put('#', State.HASH);
     }
 
     static boolean is_op_sep(char c)
@@ -152,6 +154,11 @@ public class Lexer implements ILexer {
                     return State.STR_LIT_1;
                 }
 
+                if (c == '#')
+                {
+
+                }
+
                 if (is_op_sep(c))
                 {
                     return State.OP_SEP;
@@ -162,6 +169,11 @@ public class Lexer implements ILexer {
                     return two_char_ops.get(c);
                 }
                 
+                if (is_whitespace(c))
+                {
+                    return State.START;
+                }
+
 
                 return State.FINISH;
 			}
@@ -313,6 +325,8 @@ public class Lexer implements ILexer {
 				++row;
 				col = 0;
 			}
+
+
 
             if (is_whitespace(c))
             {
