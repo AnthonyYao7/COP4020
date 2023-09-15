@@ -55,32 +55,123 @@ public class Lexer implements ILexer {
         Kind.NUM_LIT, /* NUM_LIT_0 */
         Kind.STRING_LIT, /* STR_LIT_1 */
         Kind.STRING_LIT, /* STR_LIT_2 */
+        Kind.ERROR, /* OP_SEP */
+        Kind.LSQUARE, /* LEFT_BRACKET */
+        Kind.ASSIGN, /* EQUALS */
+        Kind.LT, /* LT */
+        Kind.GT, /* GT */
+        Kind.BITAND, /* AMP */
+        Kind.BITOR, /* BAR */
+        Kind.TIMES, /* STAR */
+        Kind.MINUS, /* HYPHEN */
+        Kind.COLON, /* COLON */
 
         Kind.ERROR, /* UNEXPECTED */
     };
 
-
-    static Kind resolve_final_state_name(State state) {return state_to_kind[state.ordinal()];}
 
     final static private Map<String, Kind> reserved_words= new HashMap<>();
     static {
         /* Should probably add another enumeration for reserved words
            Kind.ERROR is a placeholder for now or something
          */
-        reserved_words.put("public", Kind.ERROR);
-        reserved_words.put("abstract", Kind.ERROR);
-        reserved_words.put("assert", Kind.ERROR);
-        reserved_words.put("boolean", Kind.ERROR);
-        reserved_words.put("break", Kind.ERROR);
-        reserved_words.put("byte", Kind.ERROR);
-        reserved_words.put("case", Kind.ERROR);
-        reserved_words.put("catch", Kind.ERROR);
-        reserved_words.put("char", Kind.ERROR);
-        reserved_words.put("class", Kind.ERROR);
-        reserved_words.put("const", Kind.ERROR);
+        reserved_words.put("TRUE", Kind.BOOLEAN_LIT);
+        reserved_words.put("FALSE", Kind.BOOLEAN_LIT);
+        reserved_words.put("image", Kind.RES_image);
+        reserved_words.put("pixel", Kind.RES_pixel);
+        reserved_words.put("int", Kind.RES_int);
+        reserved_words.put("string", Kind.RES_string);
+        reserved_words.put("void", Kind.RES_void);
+        reserved_words.put("boolean", Kind.RES_boolean);
+        reserved_words.put("write", Kind.RES_write);
+        reserved_words.put("height", Kind.RES_height);
+        reserved_words.put("width", Kind.RES_width);
+        reserved_words.put("if", Kind.RES_if);
+        reserved_words.put("fi", Kind.RES_fi);
+        reserved_words.put("do", Kind.RES_do);
+        reserved_words.put("od", Kind.RES_od);
+        reserved_words.put("red", Kind.RES_red);
+        reserved_words.put("green", Kind.RES_green);
+        reserved_words.put("blue", Kind.RES_blue);
+
         // Add more reserved words as needed
 
     }
+
+    final static private Set<String> constants = new HashSet<>();
+
+    static {
+        constants.add("Z");
+        constants.add("BLACK");
+        constants.add("BLUE");
+        constants.add("CYAN");
+        constants.add("DARK_GRAY");
+        constants.add("GRAY");
+        constants.add("GREEN");
+        constants.add("LIGHT_GRAY");
+        constants.add("MAGENTA");
+        constants.add("ORANGE");
+        constants.add("PINK");
+        constants.add("RED");
+        constants.add("WHITE");
+        constants.add("YELLOW");
+    }
+
+    final static private Map<String, Kind> op_sep_kind = new HashMap<>();
+
+    static {
+        op_sep_kind.put(",", Kind.COMMA);
+        op_sep_kind.put(";", Kind.SEMI);
+        op_sep_kind.put("?", Kind.QUESTION);
+        op_sep_kind.put(":", Kind.COLON);
+        op_sep_kind.put("(", Kind.LPAREN);
+        op_sep_kind.put(")", Kind.RPAREN);
+        op_sep_kind.put("<", Kind.LT);
+        op_sep_kind.put(">", Kind.GT);
+        op_sep_kind.put("[", Kind.LSQUARE);
+        op_sep_kind.put("]", Kind.RSQUARE);
+        op_sep_kind.put("=", Kind.ASSIGN);
+        op_sep_kind.put("==", Kind.EQ);
+        op_sep_kind.put("<=", Kind.LE);
+        op_sep_kind.put(">=", Kind.GE);
+        op_sep_kind.put("!", Kind.BANG);
+        op_sep_kind.put("&", Kind.BITAND);
+        op_sep_kind.put("&&", Kind.AND);
+        op_sep_kind.put("|", Kind.BITOR);
+        op_sep_kind.put("||", Kind.OR);
+        op_sep_kind.put("+", Kind.PLUS);
+        op_sep_kind.put("-", Kind.MINUS);
+        op_sep_kind.put("*", Kind.TIMES);
+        op_sep_kind.put("**", Kind.EXP);
+        op_sep_kind.put("/", Kind.DIV);
+        op_sep_kind.put("%", Kind.MOD);
+        op_sep_kind.put("<:", Kind.BLOCK_OPEN);
+        op_sep_kind.put(":>", Kind.BLOCK_CLOSE);
+        op_sep_kind.put("^", Kind.RETURN);
+        op_sep_kind.put("->", Kind.RARROW);
+        op_sep_kind.put("[]", Kind.BOX);
+
+    }
+
+
+    static Kind resolve_final_state_name(State state, String s) {
+        if (state == State.IDENT)
+        {
+            if (reserved_words.containsKey(s))
+                return reserved_words.get(s);
+
+            if (constants.contains(s))
+                return Kind.CONST;
+        }
+
+        if (state == State.OP_SEP)
+        {
+            return op_sep_kind.get(s);
+        }
+
+        return state_to_kind[state.ordinal()];
+    }
+
 
 	final static private Character[] op_sep_values = new Character[] {
 		',', ';', '?', '(', ')', ']',
@@ -156,7 +247,7 @@ public class Lexer implements ILexer {
 
                 if (c == '#')
                 {
-
+                    return State.HASH;
                 }
 
                 if (is_op_sep(c))
@@ -285,6 +376,18 @@ public class Lexer implements ILexer {
                     return State.OP_SEP;
                 return State.FINISH;
             }
+        },/* HASH = */ new Transition() {
+            public State apply(char c) {
+                if (c == '#')
+                    return State.COMMENT;
+                return State.UNEXPECTED;
+            }
+        },/* COMMENT = */ new Transition() {
+            public State apply(char c) {
+                if (is_newline(c))
+                    return State.START;
+                return State.COMMENT;
+            }
         }
 	};
 
@@ -326,31 +429,41 @@ public class Lexer implements ILexer {
 				col = 0;
 			}
 
+            last = cur;
+            cur = transitions[cur.ordinal()].apply(c);
 
-
-            if (is_whitespace(c))
+            if (is_whitespace(c) || cur == State.HASH || cur == State.COMMENT)
             {
                 last_whitespace = true;
-
-                if (cur == State.START)
-                    continue;
-
-                last = cur;
-                cur = State.FINISH;
             }
             else
             {
                 text.append(c);
-                last = cur;
-
-                cur = transitions[cur.ordinal()].apply(c);
             }
+
+//            if (is_whitespace(c))
+//            {
+//                last_whitespace = true;
+//
+//                if (cur == State.START)
+//                    continue;
+//
+//                last = cur;
+//                cur = State.FINISH;
+//            }
+//            else
+//            {
+//                text.append(c);
+//                last = cur;
+//
+//                cur = transitions[cur.ordinal()].apply(c);
+//            }
 		}
+
 
         if (!last_whitespace)
         {
             text.deleteCharAt(text.length() - 1);
-
             --pos;
             --col;
         }
@@ -360,7 +473,7 @@ public class Lexer implements ILexer {
         if (s.isEmpty())
             return new Token(EOF, 0, 0, null, new SourceLocation(row, col));
 
-        return new Token(resolve_final_state_name(last), 0, s.length(), s.toCharArray(), new SourceLocation(row, col));
+        return new Token(resolve_final_state_name(last, s), 0, s.length(), s.toCharArray(), new SourceLocation(row, col));
 	}
 
 
