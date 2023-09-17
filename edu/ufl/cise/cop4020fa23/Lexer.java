@@ -45,7 +45,7 @@ public class Lexer implements ILexer {
         COMMENT,
 
         UNEXPECTED,
-	};
+	}
 
     final static private Kind[] state_to_kind = new Kind[] {
         Kind.ERROR, /* START */
@@ -406,7 +406,7 @@ public class Lexer implements ILexer {
          * Test 12: Haven't implemented ops and seps
          * Test 13: Haven't implemented EOF token
          * Test 14: Could be because special characters are not implemented yet
-         * Test 15: I might have messed up the transition function for identifiers - yes (but now its becasue havent implemented ops and seps)
+         * Test 15: I might have messed up the transition function for identifiers - yes (but now it's because haven't implemented ops and seps)
          * Test 16: Special characters
          */
         if (pos == input.length())
@@ -419,7 +419,7 @@ public class Lexer implements ILexer {
 
 		while (cur != State.FINISH && pos < input.length())
 		{
-			char c = input.charAt(pos++);
+            char c = input.charAt(pos++);
 
 			++col;
 
@@ -438,6 +438,8 @@ public class Lexer implements ILexer {
             }
             else
             {
+                if (!is_whitespace(c) && last_whitespace)
+                    last_whitespace = false;
                 text.append(c);
             }
 
@@ -463,15 +465,21 @@ public class Lexer implements ILexer {
 
         if (!last_whitespace)
         {
-            text.deleteCharAt(text.length() - 1);
-            --pos;
-            --col;
+            if (text.length() > 1) {
+                text.deleteCharAt(text.length() - 1);
+                --pos;
+                --col;
+            }
         }
 
         String s = text.toString();
 
         if (s.isEmpty())
             return new Token(EOF, 0, 0, null, new SourceLocation(row, col));
+
+        if (last == State.START) {
+            return new Token(resolve_final_state_name(cur, s), 0, s.length(), s.toCharArray(), new SourceLocation(row, col));
+        }
 
         return new Token(resolve_final_state_name(last, s), 0, s.length(), s.toCharArray(), new SourceLocation(row, col));
 	}
