@@ -20,7 +20,9 @@ public class Lexer implements ILexer {
 
 	String input;
 
-	int row = 0, col = 0, pos = 0;
+	int row = 1, col = 0, pos = 0, colCounter = 0;
+
+    String s;
 
 	enum State
 	{
@@ -416,17 +418,19 @@ public class Lexer implements ILexer {
 		StringBuilder text = new StringBuilder();
         boolean last_whitespace = false;
 
+        //col++;
 
 		while (cur != State.FINISH && pos < input.length())
 		{
+
             char c = input.charAt(pos++);
 
-			++col;
+			//++colCounter;
 
 			if (is_newline(c))
 			{
 				++row;
-				col = 0;
+				colCounter = 0;
 			}
 
             last = cur;
@@ -434,7 +438,13 @@ public class Lexer implements ILexer {
 
             if (is_whitespace(c) || cur == State.HASH || cur == State.COMMENT)
             {
-                last_whitespace = true;
+                if (cur != State.UNEXPECTED) {
+                    last_whitespace = true;
+                    col = colCounter;
+                }
+                else {
+                    last_whitespace = false;
+                }
             }
             else
             {
@@ -442,6 +452,8 @@ public class Lexer implements ILexer {
                     last_whitespace = false;
                 text.append(c);
             }
+
+            ++colCounter;
 
 //            if (is_whitespace(c))
 //            {
@@ -468,11 +480,21 @@ public class Lexer implements ILexer {
             if (text.length() > 1) {
                 text.deleteCharAt(text.length() - 1);
                 --pos;
-                --col;
+                --colCounter;
             }
         }
 
-        String s = text.toString();
+        s = text.toString();
+        String temp = s;
+
+//        try {
+//            Integer.valueOf(temp);
+//        }
+//        catch (Exception e) {
+//            LexicalException le = new LexicalException(e.getMessage());
+//        }
+
+        System.out.println(text + " " + row + " " + col);
 
         if (s.isEmpty())
             return new Token(EOF, 0, 0, null, new SourceLocation(row, col));
