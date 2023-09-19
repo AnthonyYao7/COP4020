@@ -485,14 +485,18 @@ public class Lexer implements ILexer {
         }
 
         s = text.toString();
-        String temp = s;
 
-//        try {
-//            Integer.valueOf(temp);
-//        }
-//        catch (Exception e) {
-//            LexicalException le = new LexicalException(e.getMessage());
-//        }
+        try {
+            if (!s.isEmpty()) {
+                boolean isNumeric = s.chars().allMatch(Character::isDigit);
+                if (isNumeric) {
+                    Integer.parseInt(s);
+                }
+            }
+        }
+        catch (Exception e) {
+            throw new LexicalException();
+        }
 
         System.out.println(text + " " + row + " " + col);
 
