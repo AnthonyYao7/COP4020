@@ -444,6 +444,7 @@ public class Lexer implements ILexer {
                 }
                 else {
                     last_whitespace = false;
+                    throw new LexicalException();
                 }
             }
             else
