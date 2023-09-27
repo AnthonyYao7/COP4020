@@ -9,6 +9,8 @@
  */
 package edu.ufl.cise.cop4020fa23;
 
+import edu.ufl.cise.cop4020fa23.exceptions.LexicalException;
+
 /**
  * Factory class providing static methods to create and return various components of the compiler
  */
@@ -17,5 +19,8 @@ public class ComponentFactory {
 		public static ILexer makeLexer(String input) {
 			return new Lexer(input);
 		}
-		
+
+	public static IParser makeExpressionParser(String input) throws LexicalException {
+			return new ExpressionParser(makeLexer(input));
+	}
 }

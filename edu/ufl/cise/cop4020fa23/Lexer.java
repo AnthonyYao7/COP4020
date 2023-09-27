@@ -460,6 +460,11 @@ public class Lexer implements ILexer {
             }
 		}
 
+        if (cur == State.STR_LIT_1)
+        {
+            throw new LexicalException();
+        }
+
 
         if (!last_whitespace)
         {
@@ -481,6 +486,4 @@ public class Lexer implements ILexer {
 
         return new Token(resolve_final_state_name(last, s), 0, s.length(), s.toCharArray(), new SourceLocation(cr, cc));
 	}
-
-
 }
