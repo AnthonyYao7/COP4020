@@ -20,9 +20,7 @@ public class Lexer implements ILexer {
 
 	String input;
 
-	int row = 1, col = 0, pos = 0, colCounter = 0;
-
-    String s;
+	int row = 1, col = 0, pos = 0;
 
 	enum State
 	{
@@ -156,7 +154,7 @@ public class Lexer implements ILexer {
     }
 
 
-    static Kind resolve_final_state_name(State state, String s) {
+    static Kind resolve_final_state_name(State state, String s) throws LexicalException {
         if (state == State.IDENT)
         {
             if (reserved_words.containsKey(s))
@@ -169,6 +167,17 @@ public class Lexer implements ILexer {
         if (state == State.OP_SEP)
         {
             return op_sep_kind.get(s);
+        }
+
+        if (state == State.NUM_LIT)
+        {
+            try {
+                Integer.parseInt(s);
+            }
+            catch (NumberFormatException e)
+            {
+                throw new LexicalException();
+            }
         }
 
         return state_to_kind[state.ordinal()];
@@ -218,12 +227,12 @@ public class Lexer implements ILexer {
 
 	interface Transition
 	{
-		State apply(char c);
+		State apply(char c) throws LexicalException;
 	}
 
 	final static private Transition[] transitions = new Transition[]{
 		/* START = */ new Transition() {
-			public State apply(char c) {
+			public State apply(char c) throws LexicalException {
                 if (
                     between_inclusive(c, 'a', 'z') ||
                     between_inclusive(c, 'A', 'Z') ||
@@ -267,8 +276,7 @@ public class Lexer implements ILexer {
                     return State.START;
                 }
 
-
-                return State.FINISH;
+                throw new LexicalException();
 			}
 		}, /* FINISH = */ new Transition() {
 			public State apply(char c) {
@@ -303,7 +311,7 @@ public class Lexer implements ILexer {
                 return State.FINISH;
             }
         },/* STR_LIT_1 = */ new Transition() {
-			public State apply(char c) {
+			public State apply(char c) throws LexicalException {
                 if (c == '"')
                 {
                     return State.STR_LIT_2;
@@ -314,7 +322,7 @@ public class Lexer implements ILexer {
                     return State.STR_LIT_1;
                 }
 
-                return State.UNEXPECTED;
+                throw new LexicalException();
 			}
 		},/* STR_LIT_2 = */ new Transition() {
             public State apply(char c) {
@@ -379,10 +387,10 @@ public class Lexer implements ILexer {
                 return State.FINISH;
             }
         },/* HASH = */ new Transition() {
-            public State apply(char c) {
+            public State apply(char c) throws LexicalException {
                 if (c == '#')
                     return State.COMMENT;
-                return State.UNEXPECTED;
+                throw new LexicalException();
             }
         },/* COMMENT = */ new Transition() {
             public State apply(char c) {
@@ -402,7 +410,7 @@ public class Lexer implements ILexer {
 	@Override
 	public IToken next() throws LexicalException {
 
-        /**
+        /*
          * Notes:
          * Test 11: Should throw lexical exception because number is too large (all 9s)
          * Test 12: Haven't implemented ops and seps
@@ -414,23 +422,21 @@ public class Lexer implements ILexer {
         if (pos == input.length())
             return new Token(EOF, 0, 0, null, new SourceLocation(row, col));
 
+        int cr = -1, cc = -1;
 		State cur = State.START, last = State.START;
 		StringBuilder text = new StringBuilder();
         boolean last_whitespace = false;
 
-        //col++;
-
 		while (cur != State.FINISH && pos < input.length())
 		{
-
             char c = input.charAt(pos++);
 
-			//++colCounter;
+			++col;
 
 			if (is_newline(c))
 			{
 				++row;
-				colCounter = 0;
+				col = 0;
 			}
 
             last = cur;
@@ -438,41 +444,20 @@ public class Lexer implements ILexer {
 
             if (is_whitespace(c) || cur == State.HASH || cur == State.COMMENT)
             {
-                if (cur != State.UNEXPECTED) {
-                    last_whitespace = true;
-                    col = colCounter;
-                }
-                else {
-                    last_whitespace = false;
-                    throw new LexicalException();
-                }
+                last_whitespace = true;
             }
             else
             {
                 if (!is_whitespace(c) && last_whitespace)
                     last_whitespace = false;
+
+                if (cc == -1 || cr == -1)
+                {
+                    cc = col;
+                    cr = row;
+                }
                 text.append(c);
             }
-
-            ++colCounter;
-
-//            if (is_whitespace(c))
-//            {
-//                last_whitespace = true;
-//
-//                if (cur == State.START)
-//                    continue;
-//
-//                last = cur;
-//                cur = State.FINISH;
-//            }
-//            else
-//            {
-//                text.append(c);
-//                last = cur;
-//
-//                cur = transitions[cur.ordinal()].apply(c);
-//            }
 		}
 
 
@@ -481,34 +466,20 @@ public class Lexer implements ILexer {
             if (text.length() > 1) {
                 text.deleteCharAt(text.length() - 1);
                 --pos;
-                --colCounter;
+                --col;
             }
         }
 
-        s = text.toString();
-
-        try {
-            if (!s.isEmpty()) {
-                boolean isNumeric = s.chars().allMatch(Character::isDigit);
-                if (isNumeric) {
-                    Integer.parseInt(s);
-                }
-            }
-        }
-        catch (Exception e) {
-            throw new LexicalException();
-        }
-
-        System.out.println(text + " " + row + " " + col);
+        String s = text.toString();
 
         if (s.isEmpty())
-            return new Token(EOF, 0, 0, null, new SourceLocation(row, col));
+            return new Token(EOF, 0, 0, null, new SourceLocation(cr, cc));
 
         if (last == State.START) {
-            return new Token(resolve_final_state_name(cur, s), 0, s.length(), s.toCharArray(), new SourceLocation(row, col));
+            return new Token(resolve_final_state_name(cur, s), 0, s.length(), s.toCharArray(), new SourceLocation(cr, cc));
         }
 
-        return new Token(resolve_final_state_name(last, s), 0, s.length(), s.toCharArray(), new SourceLocation(row, col));
+        return new Token(resolve_final_state_name(last, s), 0, s.length(), s.toCharArray(), new SourceLocation(cr, cc));
 	}
 
 
