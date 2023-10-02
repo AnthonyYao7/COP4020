@@ -9,49 +9,18 @@
  */
 package edu.ufl.cise.cop4020fa23;
 
-import static edu.ufl.cise.cop4020fa23.Kind.AND;
-import static edu.ufl.cise.cop4020fa23.Kind.BANG;
-import static edu.ufl.cise.cop4020fa23.Kind.BITAND;
-import static edu.ufl.cise.cop4020fa23.Kind.BITOR;
-import static edu.ufl.cise.cop4020fa23.Kind.COLON;
-import static edu.ufl.cise.cop4020fa23.Kind.COMMA;
-import static edu.ufl.cise.cop4020fa23.Kind.DIV;
-import static edu.ufl.cise.cop4020fa23.Kind.EQ;
-import static edu.ufl.cise.cop4020fa23.Kind.EXP;
-import static edu.ufl.cise.cop4020fa23.Kind.GE;
-import static edu.ufl.cise.cop4020fa23.Kind.GT;
-import static edu.ufl.cise.cop4020fa23.Kind.IDENT;
-import static edu.ufl.cise.cop4020fa23.Kind.LE;
-import static edu.ufl.cise.cop4020fa23.Kind.LPAREN;
-import static edu.ufl.cise.cop4020fa23.Kind.LSQUARE;
-import static edu.ufl.cise.cop4020fa23.Kind.LT;
-import static edu.ufl.cise.cop4020fa23.Kind.MINUS;
-import static edu.ufl.cise.cop4020fa23.Kind.MOD;
-import static edu.ufl.cise.cop4020fa23.Kind.NUM_LIT;
-import static edu.ufl.cise.cop4020fa23.Kind.OR;
-import static edu.ufl.cise.cop4020fa23.Kind.PLUS;
-import static edu.ufl.cise.cop4020fa23.Kind.QUESTION;
-import static edu.ufl.cise.cop4020fa23.Kind.RARROW;
-import static edu.ufl.cise.cop4020fa23.Kind.RES_height;
-import static edu.ufl.cise.cop4020fa23.Kind.RES_width;
-import static edu.ufl.cise.cop4020fa23.Kind.RSQUARE;
-import static edu.ufl.cise.cop4020fa23.Kind.STRING_LIT;
-import static edu.ufl.cise.cop4020fa23.Kind.TIMES;
-import static edu.ufl.cise.cop4020fa23.Kind.CONST;
-import static edu.ufl.cise.cop4020fa23.Kind.BOOLEAN_LIT;
-
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 
-import edu.ufl.cise.cop4020fa23.ast.AST;
-import edu.ufl.cise.cop4020fa23.ast.ConditionalExpr;
-import edu.ufl.cise.cop4020fa23.ast.Expr;
+import edu.ufl.cise.cop4020fa23.ast.*;
 import edu.ufl.cise.cop4020fa23.exceptions.LexicalException;
 import edu.ufl.cise.cop4020fa23.exceptions.PLCCompilerException;
 import edu.ufl.cise.cop4020fa23.exceptions.SyntaxException;
-import edu.ufl.cise.cop4020fa23.ast.BinaryExpr;
+
+import static edu.ufl.cise.cop4020fa23.Kind.*;
+
 /**
 Expr::=  ConditionalExpr | LogicalOrExpr    
 ConditionalExpr ::=  ?  Expr  :  Expr  :  Expr 
@@ -154,11 +123,11 @@ public class ExpressionParser implements IParser {
 	private Expr expr() throws PLCCompilerException {
 //		IToken firstToken = t;
 
-		if (in_first(ASTNodeNames.ConditionalExpr, t))
+		if (in_first(ASTNodeNames.ConditionalExpr))
 		{
 			return conditionalExpr();
 		}
-		else if (in_first(ASTNodeNames.LogicalOrExpr, t))
+		else if (in_first(ASTNodeNames.LogicalOrExpr))
 		{
 			return logicalOrExpr();
 		}
@@ -176,7 +145,7 @@ public class ExpressionParser implements IParser {
 		match(COMMA);
 		Expr expr3 = expr();
 
-		return new ConditionalExpr(t, expr1, expr2, expr3);
+		return new ConditionalExpr(firstToken, expr1, expr2, expr3);
 	}
 
 	private Expr logicalOrExpr() throws PLCCompilerException {
@@ -191,7 +160,7 @@ public class ExpressionParser implements IParser {
 
 			Expr expr2 = logicalAndExpr();
 
-			expr1 = new BinaryExpr(t, expr1, orr, expr2);
+			expr1 = new BinaryExpr(firstToken, expr1, orr, expr2);
 
 			at_least_one = true;
 		}
@@ -215,7 +184,7 @@ public class ExpressionParser implements IParser {
 
 			Expr expr2 = comparisonExpr();
 
-			expr1 = new BinaryExpr(t, expr1, andd, expr2);
+			expr1 = new BinaryExpr(firstToken, expr1, andd, expr2);
 
 			at_least_one = true;
 		}
@@ -239,7 +208,7 @@ public class ExpressionParser implements IParser {
 
 			Expr expr2 = powExpr();
 
-			expr1 = new BinaryExpr(t, expr1, cmp, expr2);
+			expr1 = new BinaryExpr(firstToken, expr1, cmp, expr2);
 
 			at_least_one = true;
 		}
@@ -261,7 +230,7 @@ public class ExpressionParser implements IParser {
 
 			Expr expr2 = powExpr();
 
-			return new BinaryExpr(t, expr1, exponent, expr2);
+			return new BinaryExpr(firstToken, expr1, exponent, expr2);
 		}
 
 		return expr1;
@@ -272,9 +241,160 @@ public class ExpressionParser implements IParser {
 
 		Expr expr1 = multiplicativeExpr();
 
+		boolean at_least_one = false;
 
+		while (in(PLUS, MINUS))
+		{
+			IToken adder = match(PLUS, MINUS);
 
-		throw new UnsupportedOperationException("THE PARSER HAS NOT BEEN IMPLEMENTED YET");
+			Expr expr2 = multiplicativeExpr();
+
+			expr1 = new BinaryExpr(firstToken, expr1, adder, expr2);
+
+			at_least_one = true;
+		}
+
+		if (!at_least_one)
+			throw new SyntaxException();
+
+		return expr1;
+	}
+
+	private Expr multiplicativeExpr() throws PLCCompilerException {
+		IToken firstToken = t;
+
+		Expr expr1 = unaryExpr();
+
+		boolean at_least_one = false;
+
+		while (in(TIMES, DIV, MOD))
+		{
+			IToken mult = match(TIMES, DIV, MOD);
+
+			Expr expr2 = unaryExpr();
+
+			expr1 = new BinaryExpr(firstToken, expr1, mult, expr2);
+
+			at_least_one = true;
+		}
+
+		if (!at_least_one)
+			throw new SyntaxException();
+
+		return expr1;
+	}
+
+	private Expr unaryExpr() throws PLCCompilerException {
+		IToken firstToken = t;
+
+		if (in(BANG, MINUS, RES_width, RES_height))
+		{
+			IToken tk = match(BANG, MINUS, RES_width, RES_height);
+
+			Expr expr = unaryExpr();
+
+			return new UnaryExpr(firstToken, tk, expr);
+		}
+		else if (in_first(ASTNodeNames.PostfixExpr))
+		{
+			return postfixExpr();
+		}
+
+		throw new PLCCompilerException();
+	}
+
+	private Expr postfixExpr() throws PLCCompilerException {
+		IToken firstToken = t;
+
+		Expr expr1 = primaryExpr();
+		PixelSelector expr2 = null;
+		ChannelSelector expr3 = null;
+
+		if (in_first(ASTNodeNames.PixelSelector))
+		{
+			expr2 = pixelSelector();
+		}
+
+		if (in_first(ASTNodeNames.ChannelSelector))
+		{
+			expr3 = channelSelector();
+		}
+
+		return new PostfixExpr(t, expr1, expr2, expr3);
+	}
+
+	private Expr primaryExpr() throws PLCCompilerException {
+		IToken firstToken = t;
+
+		if (in(STRING_LIT, NUM_LIT, BOOLEAN_LIT, IDENT, CONST))
+		{
+			IToken tok = match(STRING_LIT, NUM_LIT, BOOLEAN_LIT, IDENT, CONST);
+
+			return switch (tok.kind())
+			{
+				case IDENT -> new IdentExpr(firstToken);
+				case NUM_LIT -> new NumLitExpr(firstToken);
+				case STRING_LIT -> new StringLitExpr(firstToken);
+				case CONST -> new ConstExpr(firstToken);
+				case BOOLEAN_LIT -> new BooleanLitExpr(firstToken);
+				default -> null;
+			};
+		}
+		else if (in(LPAREN))
+		{
+			match(LPAREN);
+			Expr expr1 = expr();
+			match(RPAREN);
+
+			return expr1;
+		}
+		else
+		{
+            return expandedPixelExpr();
+		}
+	}
+	private ChannelSelector channelSelector() throws PLCCompilerException {
+		IToken firstToken = t;
+
+		match(COLON);
+		IToken second = match(RES_red, RES_green, RES_blue);
+
+		return new ChannelSelector(firstToken, second);
+	}
+	private PixelSelector pixelSelector() throws PLCCompilerException {
+		IToken firstToken = t;
+
+		match(LSQUARE);
+
+		Expr expr1 = expr();
+
+		match(COMMA);
+
+		Expr expr2 = expr();
+
+		match(RSQUARE);
+
+		return new PixelSelector(firstToken, expr1, expr2);
+	}
+
+	private Expr expandedPixelExpr() throws PLCCompilerException {
+		IToken firstToken = t;
+
+		match(LSQUARE);
+
+		Expr expr1 = expr();
+
+		match(COMMA);
+
+		Expr expr2 = expr();
+
+		match(COMMA);
+
+		Expr expr3 = expr();
+
+		match(RSQUARE);
+
+		return new ExpandedPixelExpr(firstToken, expr1, expr2, expr3);
 	}
 
 
@@ -318,10 +438,10 @@ public class ExpressionParser implements IParser {
 		return false;
 	}
 
-	private boolean in_first(ASTNodeNames name, IToken token)
+	private boolean in_first(ASTNodeNames name)
 	{
 		// For now, the predict sets are identically equal to the first sets, thus this will act accordingly
-		return FIRST.get(name.ordinal()).contains(token.kind());
+		return FIRST.get(name.ordinal()).contains(t.kind());
 	}
 
 	private boolean in_follow(ASTNodeNames name, IToken token)
