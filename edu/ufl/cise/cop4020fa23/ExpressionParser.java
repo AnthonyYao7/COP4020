@@ -16,7 +16,7 @@ import java.util.HashSet;
 
 import edu.ufl.cise.cop4020fa23.ast.*;
 import edu.ufl.cise.cop4020fa23.exceptions.LexicalException;
-import edu.ufl.cise.cop4020fa23.exceptions.PLCCompilerException;
+import edu.ufl.cise.cop4020fa23.exceptions.SyntaxException;
 import edu.ufl.cise.cop4020fa23.exceptions.SyntaxException;
 
 import static edu.ufl.cise.cop4020fa23.Kind.*;
@@ -75,20 +75,34 @@ public class ExpressionParser implements IParser {
 			FIRST.add(null);
 		}
 
-		FIRST.set(ASTNodeNames.Expr.ordinal(), new HashSet<>(Arrays.asList(BANG, MINUS, RES_width, RES_height, QUESTION)));
-		FIRST.set(ASTNodeNames.ConditionalExpr.ordinal(), new HashSet<>(Arrays.asList(QUESTION)));
-		FIRST.set(ASTNodeNames.LogicalOrExpr.ordinal(), new HashSet<>(Arrays.asList(BANG, MINUS, RES_width, RES_height)));
-		FIRST.set(ASTNodeNames.LogicalAndExpr.ordinal(), new HashSet<>(Arrays.asList(BANG, MINUS, RES_width, RES_height)));
-		FIRST.set(ASTNodeNames.ComparisonExpr.ordinal(), new HashSet<>(Arrays.asList(BANG, MINUS, RES_width, RES_height)));
-		FIRST.set(ASTNodeNames.PowExpr.ordinal(), new HashSet<>(Arrays.asList(BANG, MINUS, RES_width, RES_height)));
-		FIRST.set(ASTNodeNames.AdditiveExpr.ordinal(), new HashSet<>(Arrays.asList(BANG, MINUS, RES_width, RES_height)));
-		FIRST.set(ASTNodeNames.MultiplicativeExpr.ordinal(), new HashSet<>(Arrays.asList(BANG, MINUS, RES_width, RES_height)));
-		FIRST.set(ASTNodeNames.UnaryExpr.ordinal(), new HashSet<>(Arrays.asList(BANG, MINUS, RES_width, RES_height)));
-		FIRST.set(ASTNodeNames.PostfixExpr.ordinal(), new HashSet<>(Arrays.asList(STRING_LIT, NUM_LIT, BOOLEAN_LIT, IDENT, LPAREN, CONST, LSQUARE)));
-		FIRST.set(ASTNodeNames.PrimaryExpr.ordinal(), new HashSet<>(Arrays.asList(STRING_LIT, NUM_LIT, BOOLEAN_LIT, IDENT, LPAREN, CONST, LSQUARE)));
-		FIRST.set(ASTNodeNames.ChannelSelector.ordinal(), new HashSet<>(Arrays.asList(COLON)));
-		FIRST.set(ASTNodeNames.PixelSelector.ordinal(), new HashSet<>(Arrays.asList( LSQUARE)));
-		FIRST.set(ASTNodeNames.ExpandedPixelExpr.ordinal(), new HashSet<>(Arrays.asList(LSQUARE)));
+		FIRST.set(ASTNodeNames.Expr.ordinal(), new HashSet<>(
+				Arrays.asList(BANG, MINUS, RES_width, RES_height, QUESTION, STRING_LIT, NUM_LIT, BOOLEAN_LIT, IDENT, LPAREN, CONST, LSQUARE)));
+		FIRST.set(ASTNodeNames.ConditionalExpr.ordinal(), new HashSet<>(
+				Arrays.asList(QUESTION)));
+		FIRST.set(ASTNodeNames.LogicalOrExpr.ordinal(), new HashSet<>(
+				Arrays.asList(BANG, MINUS, RES_width, RES_height, STRING_LIT, NUM_LIT, BOOLEAN_LIT, IDENT, LPAREN, CONST, LSQUARE)));
+		FIRST.set(ASTNodeNames.LogicalAndExpr.ordinal(), new HashSet<>(
+				Arrays.asList(BANG, MINUS, RES_width, RES_height, STRING_LIT, NUM_LIT, BOOLEAN_LIT, IDENT, LPAREN, CONST, LSQUARE)));
+		FIRST.set(ASTNodeNames.ComparisonExpr.ordinal(), new HashSet<>(
+				Arrays.asList(BANG, MINUS, RES_width, RES_height, STRING_LIT, NUM_LIT, BOOLEAN_LIT, IDENT, LPAREN, CONST, LSQUARE)));
+		FIRST.set(ASTNodeNames.PowExpr.ordinal(), new HashSet<>(
+				Arrays.asList(BANG, MINUS, RES_width, RES_height, STRING_LIT, NUM_LIT, BOOLEAN_LIT, IDENT, LPAREN, CONST, LSQUARE)));
+		FIRST.set(ASTNodeNames.AdditiveExpr.ordinal(), new HashSet<>(
+				Arrays.asList(BANG, MINUS, RES_width, RES_height, STRING_LIT, NUM_LIT, BOOLEAN_LIT, IDENT, LPAREN, CONST, LSQUARE)));
+		FIRST.set(ASTNodeNames.MultiplicativeExpr.ordinal(), new HashSet<>(
+				Arrays.asList(BANG, MINUS, RES_width, RES_height, STRING_LIT, NUM_LIT, BOOLEAN_LIT, IDENT, LPAREN, CONST, LSQUARE)));
+		FIRST.set(ASTNodeNames.UnaryExpr.ordinal(), new HashSet<>(
+				Arrays.asList(BANG, MINUS, RES_width, RES_height, STRING_LIT, NUM_LIT, BOOLEAN_LIT, IDENT, LPAREN, CONST, LSQUARE)));
+		FIRST.set(ASTNodeNames.PostfixExpr.ordinal(), new HashSet<>(
+				Arrays.asList(STRING_LIT, NUM_LIT, BOOLEAN_LIT, IDENT, LPAREN, CONST, LSQUARE)));
+		FIRST.set(ASTNodeNames.PrimaryExpr.ordinal(), new HashSet<>(
+				Arrays.asList(STRING_LIT, NUM_LIT, BOOLEAN_LIT, IDENT, LPAREN, CONST, LSQUARE)));
+		FIRST.set(ASTNodeNames.ChannelSelector.ordinal(), new HashSet<>(
+				Arrays.asList(COLON)));
+		FIRST.set(ASTNodeNames.PixelSelector.ordinal(), new HashSet<>(
+				Arrays.asList( LSQUARE)));
+		FIRST.set(ASTNodeNames.ExpandedPixelExpr.ordinal(), new HashSet<>(
+				Arrays.asList(LSQUARE)));
 	}
 
 
@@ -104,12 +118,12 @@ public class ExpressionParser implements IParser {
 
 
 	@Override
-	public AST parse() throws PLCCompilerException {
+	public AST parse() throws SyntaxException, LexicalException {
 		Expr e = expr();
 		return e;
 	}
 
-	private Expr expr() throws PLCCompilerException {
+	private Expr expr() throws SyntaxException, LexicalException {
 //		IToken firstToken = t;
 
 		if (in_first(ASTNodeNames.ConditionalExpr))
@@ -121,10 +135,10 @@ public class ExpressionParser implements IParser {
 			return logicalOrExpr();
 		}
 
-		throw new PLCCompilerException();
+		throw new SyntaxException();
 	}
 
-	private Expr conditionalExpr() throws PLCCompilerException {
+	private Expr conditionalExpr() throws SyntaxException, LexicalException {
 		IToken firstToken = t;
 
 		match(QUESTION);
@@ -137,11 +151,10 @@ public class ExpressionParser implements IParser {
 		return new ConditionalExpr(firstToken, expr1, expr2, expr3);
 	}
 
-	private Expr logicalOrExpr() throws PLCCompilerException {
+	private Expr logicalOrExpr() throws SyntaxException, LexicalException {
 		IToken firstToken = t;
 
 		Expr expr1 = logicalAndExpr();
-		boolean at_least_one = false;
 
 		while (in(BITOR, OR))
 		{
@@ -150,22 +163,15 @@ public class ExpressionParser implements IParser {
 			Expr expr2 = logicalAndExpr();
 
 			expr1 = new BinaryExpr(firstToken, expr1, orr, expr2);
-
-			at_least_one = true;
 		}
-
-		if (!at_least_one)
-			throw new SyntaxException();
 
 		return expr1;
 	}
 
-	private Expr logicalAndExpr() throws PLCCompilerException {
+	private Expr logicalAndExpr() throws SyntaxException, LexicalException {
 		IToken firstToken = t;
 
 		Expr expr1 = comparisonExpr();
-
-		boolean at_least_one = false;
 
 		while (in(BITAND, AND))
 		{
@@ -174,22 +180,15 @@ public class ExpressionParser implements IParser {
 			Expr expr2 = comparisonExpr();
 
 			expr1 = new BinaryExpr(firstToken, expr1, andd, expr2);
-
-			at_least_one = true;
 		}
-
-		if (!at_least_one)
-			throw new SyntaxException();
 
 		return expr1;
 	}
 
-	private Expr comparisonExpr() throws PLCCompilerException {
+	private Expr comparisonExpr() throws SyntaxException, LexicalException {
 		IToken firstToken = t;
 
 		Expr expr1 = powExpr();
-
-		boolean at_least_one = false;
 
 		while (in(LT, LE, GT, GE, EQ))
 		{
@@ -198,17 +197,12 @@ public class ExpressionParser implements IParser {
 			Expr expr2 = powExpr();
 
 			expr1 = new BinaryExpr(firstToken, expr1, cmp, expr2);
-
-			at_least_one = true;
 		}
-
-		if (!at_least_one)
-			throw new SyntaxException();
 
 		return expr1;
 	}
 
-	private Expr powExpr() throws PLCCompilerException {
+	private Expr powExpr() throws SyntaxException, LexicalException {
 		IToken firstToken = t;
 
 		Expr expr1 = additiveExpr();
@@ -225,12 +219,10 @@ public class ExpressionParser implements IParser {
 		return expr1;
 	}
 
-	private Expr additiveExpr() throws PLCCompilerException {
+	private Expr additiveExpr() throws SyntaxException, LexicalException {
 		IToken firstToken = t;
 
 		Expr expr1 = multiplicativeExpr();
-
-		boolean at_least_one = false;
 
 		while (in(PLUS, MINUS))
 		{
@@ -239,22 +231,15 @@ public class ExpressionParser implements IParser {
 			Expr expr2 = multiplicativeExpr();
 
 			expr1 = new BinaryExpr(firstToken, expr1, adder, expr2);
-
-			at_least_one = true;
 		}
-
-		if (!at_least_one)
-			throw new SyntaxException();
 
 		return expr1;
 	}
 
-	private Expr multiplicativeExpr() throws PLCCompilerException {
+	private Expr multiplicativeExpr() throws SyntaxException, LexicalException {
 		IToken firstToken = t;
 
 		Expr expr1 = unaryExpr();
-
-		boolean at_least_one = false;
 
 		while (in(TIMES, DIV, MOD))
 		{
@@ -263,17 +248,12 @@ public class ExpressionParser implements IParser {
 			Expr expr2 = unaryExpr();
 
 			expr1 = new BinaryExpr(firstToken, expr1, mult, expr2);
-
-			at_least_one = true;
 		}
-
-		if (!at_least_one)
-			throw new SyntaxException();
 
 		return expr1;
 	}
 
-	private Expr unaryExpr() throws PLCCompilerException {
+	private Expr unaryExpr() throws SyntaxException, LexicalException {
 		IToken firstToken = t;
 
 		if (in(BANG, MINUS, RES_width, RES_height))
@@ -289,10 +269,10 @@ public class ExpressionParser implements IParser {
 			return postfixExpr();
 		}
 
-		throw new PLCCompilerException();
+		throw new SyntaxException();
 	}
 
-	private Expr postfixExpr() throws PLCCompilerException {
+	private Expr postfixExpr() throws SyntaxException, LexicalException {
 		IToken firstToken = t;
 
 		Expr expr1 = primaryExpr();
@@ -309,10 +289,13 @@ public class ExpressionParser implements IParser {
 			expr3 = channelSelector();
 		}
 
+		if (expr2 == null && expr3 == null)
+			return expr1;
+
 		return new PostfixExpr(t, expr1, expr2, expr3);
 	}
 
-	private Expr primaryExpr() throws PLCCompilerException {
+	private Expr primaryExpr() throws SyntaxException, LexicalException {
 		IToken firstToken = t;
 
 		if (in(STRING_LIT, NUM_LIT, BOOLEAN_LIT, IDENT, CONST))
@@ -342,7 +325,7 @@ public class ExpressionParser implements IParser {
             return expandedPixelExpr();
 		}
 	}
-	private ChannelSelector channelSelector() throws PLCCompilerException {
+	private ChannelSelector channelSelector() throws SyntaxException, LexicalException {
 		IToken firstToken = t;
 
 		match(COLON);
@@ -350,7 +333,7 @@ public class ExpressionParser implements IParser {
 
 		return new ChannelSelector(firstToken, second);
 	}
-	private PixelSelector pixelSelector() throws PLCCompilerException {
+	private PixelSelector pixelSelector() throws SyntaxException, LexicalException {
 		IToken firstToken = t;
 
 		match(LSQUARE);
@@ -366,7 +349,7 @@ public class ExpressionParser implements IParser {
 		return new PixelSelector(firstToken, expr1, expr2);
 	}
 
-	private Expr expandedPixelExpr() throws PLCCompilerException {
+	private Expr expandedPixelExpr() throws SyntaxException, LexicalException {
 		IToken firstToken = t;
 
 		match(LSQUARE);
