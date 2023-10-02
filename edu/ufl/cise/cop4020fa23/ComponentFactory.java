@@ -21,9 +21,7 @@ public class ComponentFactory {
 		}
 
 		public static IParser makeExpressionParser(String input) throws LexicalException {
-			ILexer stringInput = makeLexer(input);
-
-			return new ExpressionParser(stringInput);
+			return new ExpressionParser(makeLexer(input));
 		}
 		
 }
