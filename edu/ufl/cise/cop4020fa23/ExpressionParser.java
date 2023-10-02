@@ -21,25 +21,6 @@ import edu.ufl.cise.cop4020fa23.exceptions.SyntaxException;
 
 import static edu.ufl.cise.cop4020fa23.Kind.*;
 
-/**
-Expr::=  ConditionalExpr | LogicalOrExpr    
-ConditionalExpr ::=  ?  Expr  :  Expr  :  Expr 
-LogicalOrExpr ::= LogicalAndExpr (    (   |   |   ||   ) LogicalAndExpr)*
-LogicalAndExpr ::=  ComparisonExpr ( (   &   |  &&   )  ComparisonExpr)*
-ComparisonExpr ::= PowExpr ( (< | > | == | <= | >=) PowExpr)*
-PowExpr ::= AdditiveExpr ** PowExpr |   AdditiveExpr
-AdditiveExpr ::= MultiplicativeExpr ( ( + | -  ) MultiplicativeExpr )*
-MultiplicativeExpr ::= UnaryExpr (( * |  /  |  % ) UnaryExpr)*
-UnaryExpr ::=  ( ! | - | length | width) UnaryExpr  |  UnaryExprPostfix
-UnaryExprPostfix::= PrimaryExpr (PixelSelector | ε ) (ChannelSelector | ε )
-PrimaryExpr ::=STRING_LIT | NUM_LIT |  IDENT | ( Expr ) | Z 
-    ExpandedPixel  
-ChannelSelector ::= : red | : green | : blue
-PixelSelector  ::= [ Expr , Expr ]
-ExpandedPixel ::= [ Expr , Expr , Expr ]
-Dimension  ::=  [ Expr , Expr ]                         
-
- */
 
 public class ExpressionParser implements IParser {
 	
@@ -67,6 +48,10 @@ public class ExpressionParser implements IParser {
 	final static ArrayList<HashSet<Kind>> FOLLOW = new ArrayList<>(ASTNodeNames.values().length);
 
 	static{
+		for (int i = 0; i < ASTNodeNames.values().length; i++) {
+			FOLLOW.add(null);
+		}
+
 		FOLLOW.set(ASTNodeNames.Expr.ordinal(), new HashSet<>(Arrays.asList(COMMA, RSQUARE, RARROW)));
 		FOLLOW.set(ASTNodeNames.ConditionalExpr.ordinal(), new HashSet<>(Arrays.asList(COMMA, RSQUARE, RARROW)));
 		FOLLOW.set(ASTNodeNames.LogicalOrExpr.ordinal(), new HashSet<>(Arrays.asList(COMMA, RSQUARE, RARROW)));
@@ -86,6 +71,10 @@ public class ExpressionParser implements IParser {
 	final static ArrayList<HashSet<Kind>> FIRST = new ArrayList<>(ASTNodeNames.values().length);
 
 	static {
+		for (int i = 0; i < ASTNodeNames.values().length; i++) {
+			FIRST.add(null);
+		}
+
 		FIRST.set(ASTNodeNames.Expr.ordinal(), new HashSet<>(Arrays.asList(BANG, MINUS, RES_width, RES_height, QUESTION)));
 		FIRST.set(ASTNodeNames.ConditionalExpr.ordinal(), new HashSet<>(Arrays.asList(QUESTION)));
 		FIRST.set(ASTNodeNames.LogicalOrExpr.ordinal(), new HashSet<>(Arrays.asList(BANG, MINUS, RES_width, RES_height)));
