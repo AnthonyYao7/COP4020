@@ -460,4 +460,13 @@ class ExpressionParserTest_starter {
 		});
 	}
 
+	@Test
+	void test33() throws PLCCompilerException {
+		String input = """
+				!
+				""";
+		AST ast = getAST(input);
+		checkUnaryExpr(ast, Kind.BANG);
+	}
+
 }

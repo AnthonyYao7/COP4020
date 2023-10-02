@@ -20,7 +20,10 @@ public class ComponentFactory {
 			return new Lexer(input);
 		}
 
-	public static IParser makeExpressionParser(String input) throws LexicalException {
-			return new ExpressionParser(makeLexer(input));
-	}
+		public static IParser makeExpressionParser(String input) throws LexicalException {
+			ILexer stringInput = makeLexer(input);
+
+			return new ExpressionParser(stringInput);
+		}
+		
 }
