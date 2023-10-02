@@ -294,6 +294,9 @@ public class Lexer implements ILexer {
                     return State.IDENT;
                 }
 
+                if (c == '@') {
+                    return State.UNEXPECTED;
+                }
 
                 return State.FINISH;
 			}

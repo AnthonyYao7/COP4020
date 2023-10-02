@@ -95,6 +95,7 @@ public class ExpressionParser implements IParser {
 	
 	final ILexer lexer;
 	private IToken t;
+	private IToken current;
 
 	enum ASTNodeNames
 	{
@@ -209,6 +210,24 @@ public class ExpressionParser implements IParser {
 		t = lexer.next();
 	}
 
+	private void match(IToken token) throws LexicalException {
+		if (current.kind() == token.kind()) {
+			t = lexer.next();
+		}
+		else {
+			throw new LexicalException();
+		}
+	}
+
+	protected boolean isKind(Kind...kinds) {
+		for (Kind k: kinds) {
+			if (k == t.kind()) {
+				return true;
+			}
+		}
+		return false;
+	}
+
 
 	@Override
 	public AST parse() throws PLCCompilerException {
@@ -217,40 +236,100 @@ public class ExpressionParser implements IParser {
 	}
 
 	private Expr expr() throws PLCCompilerException {
+		Expr e = expr();
+
 		IToken firstToken = t;
-		throw new UnsupportedOperationException("THE PARSER HAS NOT BEEN IMPLEMENTED YET");
+		current = t;
+
+		return e;
+		//throw new UnsupportedOperationException("THE PARSER HAS NOT BEEN IMPLEMENTED YET");
 	}
 
 	private Expr conditionalExpr() throws PLCCompilerException {
 		IToken firstToken = t;
+		current = t;
+
 		throw new UnsupportedOperationException("THE PARSER HAS NOT BEEN IMPLEMENTED YET");
 	}
 
 	private Expr logicalOrExpr() throws PLCCompilerException {
 		IToken firstToken = t;
+		current = t;
+
 		throw new UnsupportedOperationException("THE PARSER HAS NOT BEEN IMPLEMENTED YET");
 	}
 
 	private Expr logicalAndExpr() throws PLCCompilerException {
 		IToken firstToken = t;
+		current = t;
+
 		throw new UnsupportedOperationException("THE PARSER HAS NOT BEEN IMPLEMENTED YET");
 	}
 
 	private Expr comparisonExpr() throws PLCCompilerException {
 		IToken firstToken = t;
+		current = t;
+
 		throw new UnsupportedOperationException("THE PARSER HAS NOT BEEN IMPLEMENTED YET");
 	}
 
 	private Expr powExpr() throws PLCCompilerException {
 		IToken firstToken = t;
+		current = t;
+
 		throw new UnsupportedOperationException("THE PARSER HAS NOT BEEN IMPLEMENTED YET");
 	}
 
 	private Expr additiveExpr() throws PLCCompilerException {
 		IToken firstToken = t;
+		current = t;
+
 		throw new UnsupportedOperationException("THE PARSER HAS NOT BEEN IMPLEMENTED YET");
 	}
 
+	private Expr unaryExpr() throws PLCCompilerException {
+		IToken firstToken = t;
+		current = t;
+
+		throw new UnsupportedOperationException(("THE PARSER HAS NOT BEEN IMPLEMENTED YET"));
+	}
+
+	private Expr primaryExpr() throws PLCCompilerException {
+		IToken firstToken = t;
+		current = t;
+
+
+
+		throw new UnsupportedOperationException(("THE PARSER HAS NOT BEEN IMPLEMENTED YET"));
+	}
+
+	private Expr postFixExpr() throws PLCCompilerException {
+		IToken firstToken = t;
+		current = t;
+
+		throw new UnsupportedOperationException(("THE PARSER HAS NOT BEEN IMPLEMENTED YET"));
+	}
+
+	private Expr expandedPixelExpr() throws PLCCompilerException {
+		IToken firstToken = t;
+		current = t;
+
+		throw new UnsupportedOperationException(("THE PARSER HAS NOT BEEN IMPLEMENTED YET"));
+	}
+
+	private Expr channelSelector() throws PLCCompilerException {
+		IToken firstToken = t;
+		current = t;
+
+		throw new UnsupportedOperationException(("THE PARSER HAS NOT BEEN IMPLEMENTED YET"));
+	}
+
+	private Expr pixelSelector() throws PLCCompilerException {
+		IToken firstToken = t;
+		current = t;
+
+		throw new UnsupportedOperationException(("THE PARSER HAS NOT BEEN IMPLEMENTED YET"));
+	}
 
 
 }
