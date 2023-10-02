@@ -10,14 +10,14 @@
 package edu.ufl.cise.cop4020fa23;
 
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashSet;
-
 import edu.ufl.cise.cop4020fa23.ast.*;
 import edu.ufl.cise.cop4020fa23.exceptions.LexicalException;
 import edu.ufl.cise.cop4020fa23.exceptions.PLCCompilerException;
 import edu.ufl.cise.cop4020fa23.exceptions.SyntaxException;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
 
 import static edu.ufl.cise.cop4020fa23.Kind.*;
 
@@ -43,11 +43,11 @@ public class ExpressionParser implements IParser {
 		PixelSelector,
 		ChannelSelector,
 		ExpandedPixelExpr
-	};
+	}
 
-	final static ArrayList<HashSet<Kind>> FOLLOW = new ArrayList<>(ASTNodeNames.values().length);
+	final ArrayList<HashSet<Kind>> FOLLOW = new ArrayList<>(ASTNodeNames.values().length);
 
-	static{
+	{
 		for (int i = 0; i < ASTNodeNames.values().length; i++) {
 			FOLLOW.add(null);
 		}
@@ -68,9 +68,9 @@ public class ExpressionParser implements IParser {
 		FOLLOW.set(ASTNodeNames.ExpandedPixelExpr.ordinal(), new HashSet<>(Arrays.asList(TIMES, DIV, MOD, PLUS, MINUS, EXP, LT, GT, EQ, LE, GE, BITAND, AND, BITOR, OR, COMMA, RSQUARE, RARROW)));
 	}
 
-	final static ArrayList<HashSet<Kind>> FIRST = new ArrayList<>(ASTNodeNames.values().length);
+	final ArrayList<HashSet<Kind>> FIRST = new ArrayList<>(ASTNodeNames.values().length);
 
-	static {
+	{
 		for (int i = 0; i < ASTNodeNames.values().length; i++) {
 			FIRST.add(null);
 		}
@@ -89,6 +89,15 @@ public class ExpressionParser implements IParser {
 		FIRST.set(ASTNodeNames.ChannelSelector.ordinal(), new HashSet<>(Arrays.asList(COLON)));
 		FIRST.set(ASTNodeNames.PixelSelector.ordinal(), new HashSet<>(Arrays.asList( LSQUARE)));
 		FIRST.set(ASTNodeNames.ExpandedPixelExpr.ordinal(), new HashSet<>(Arrays.asList(LSQUARE)));
+
+		FIRST.get(ASTNodeNames.UnaryExpr.ordinal()).addAll(FIRST.get(ASTNodeNames.PostfixExpr.ordinal()));
+		FIRST.get(ASTNodeNames.MultiplicativeExpr.ordinal()).addAll(FIRST.get(ASTNodeNames.UnaryExpr.ordinal()));
+		FIRST.get(ASTNodeNames.AdditiveExpr.ordinal()).addAll(FIRST.get(ASTNodeNames.MultiplicativeExpr.ordinal()));
+		FIRST.get(ASTNodeNames.PowExpr.ordinal()).addAll(FIRST.get(ASTNodeNames.AdditiveExpr.ordinal()));
+		FIRST.get(ASTNodeNames.ComparisonExpr.ordinal()).addAll(FIRST.get(ASTNodeNames.PowExpr.ordinal()));
+		FIRST.get(ASTNodeNames.LogicalAndExpr.ordinal()).addAll(FIRST.get(ASTNodeNames.ComparisonExpr.ordinal()));
+		FIRST.get(ASTNodeNames.LogicalOrExpr.ordinal()).addAll(FIRST.get(ASTNodeNames.LogicalAndExpr.ordinal()));
+		FIRST.get(ASTNodeNames.Expr.ordinal()).addAll(FIRST.get(ASTNodeNames.LogicalOrExpr.ordinal()));
 	}
 
 
@@ -110,7 +119,7 @@ public class ExpressionParser implements IParser {
 	}
 
 	private Expr expr() throws PLCCompilerException {
-//		IToken firstToken = t;
+		IToken firstToken = t;
 
 		if (in_first(ASTNodeNames.ConditionalExpr))
 		{
