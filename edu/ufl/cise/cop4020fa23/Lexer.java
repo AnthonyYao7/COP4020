@@ -445,20 +445,20 @@ public class Lexer implements ILexer {
             last = cur;
             cur = transitions[cur.ordinal()].apply(c);
 
-            if (is_whitespace(c) || cur == State.HASH || cur == State.COMMENT)
+            if ((is_whitespace(c) && cur != State.STR_LIT_1) || cur == State.HASH || cur == State.COMMENT)
             {
                 last_whitespace = true;
             }
             else
             {
-                if (!is_whitespace(c) && last_whitespace)
-                    last_whitespace = false;
+                last_whitespace = is_whitespace(c);
 
                 if (cc == -1 || cr == -1)
                 {
                     cc = col;
                     cr = row;
                 }
+
                 text.append(c);
             }
 		}

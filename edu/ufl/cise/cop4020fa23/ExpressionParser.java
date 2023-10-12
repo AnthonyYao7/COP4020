@@ -13,6 +13,7 @@ package edu.ufl.cise.cop4020fa23;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.List;
 
 import edu.ufl.cise.cop4020fa23.ast.*;
 import edu.ufl.cise.cop4020fa23.exceptions.LexicalException;
@@ -116,11 +117,9 @@ public class ExpressionParser implements IParser {
 		t = lexer.next();
 	}
 
-
 	@Override
 	public AST parse() throws SyntaxException, LexicalException {
-		Expr e = expr();
-		return e;
+        return expr();
 	}
 
 	private Expr expr() throws SyntaxException, LexicalException {
@@ -368,7 +367,6 @@ public class ExpressionParser implements IParser {
 
 		return new ExpandedPixelExpr(firstToken, expr1, expr2, expr3);
 	}
-
 
 	private IToken match(Kind c) throws LexicalException, SyntaxException
 	{

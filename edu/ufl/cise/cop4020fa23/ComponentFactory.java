@@ -19,9 +19,21 @@ public class ComponentFactory {
 		public static ILexer makeLexer(String input) {
 			return new Lexer(input);
 		}
-
+		
+		public static IParser makeExpressionParser(ILexer lexer) throws LexicalException {
+			return new ExpressionParser(lexer);
+		}
+		
 		public static IParser makeExpressionParser(String input) throws LexicalException {
 			return new ExpressionParser(makeLexer(input));
+		}
+		
+		public static IParser makeParser(String input) throws LexicalException {
+			return new Parser(makeLexer(input));
+		}
+		
+		public static IParser makeParser(ILexer lexer) throws LexicalException {
+			return new Parser(lexer);
 		}
 		
 }
