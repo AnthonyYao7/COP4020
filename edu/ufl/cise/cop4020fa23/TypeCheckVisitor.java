@@ -165,7 +165,11 @@ public class TypeCheckVisitor implements ASTVisitor {
 
     @Override
     public Object visitIdentExpr(IdentExpr identExpr, Object arg) throws PLCCompilerException {
-
+        NameDef nd = st.lookup(identExpr.getName());
+        check(nd != null, identExpr, "identifier has not been declared");
+        identExpr.setNameDef(nd);
+        identExpr.setType(nd.getType());
+        return nd.getType();
     }
 
     @Override
@@ -181,6 +185,10 @@ public class TypeCheckVisitor implements ASTVisitor {
     @Override
     public Object visitNameDef(NameDef nameDef, Object arg) throws PLCCompilerException {
         Type type;
+
+        nameDef.getIdentToken();
+        nameDef.getDimension().visit(this, arg);
+
         if (nameDef.getDimension() == null){
             type = Type.IMAGE;
         }
@@ -188,7 +196,7 @@ public class TypeCheckVisitor implements ASTVisitor {
             type = nameDef.getType();
         }
         nameDef.setType(type);
-        return nameDef;
+        return type;
     }
 
     @Override
@@ -281,12 +289,21 @@ public class TypeCheckVisitor implements ASTVisitor {
 
     @Override
     public Object visitBooleanLitExpr(BooleanLitExpr booleanLitExpr, Object arg) throws PLCCompilerException {
-        return null;
+        booleanLitExpr.setType(Type.BOOLEAN);
+        return Type.BOOLEAN;
     }
 
     @Override
     public Object visitConstExpr(ConstExpr constExpr, Object arg) throws PLCCompilerException {
-        return null;
+        Type t;
+        if (constExpr.getName() == "Z") {
+            t = Type.INT;
+        } else {
+            t = Type.PIXEL;
+        }
+
+        constExpr.setType(t);
+        return t;
     }
 
     public void check(boolean cond, Object obj, String err) throws TypeCheckException {

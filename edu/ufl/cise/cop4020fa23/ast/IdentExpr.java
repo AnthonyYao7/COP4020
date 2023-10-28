@@ -27,7 +27,7 @@ public class IdentExpr extends Expr {
 	public Object visit(ASTVisitor v, Object arg) throws PLCCompilerException {
 		return v.visitIdentExpr(this, arg);
 	}
- 
+
 	public String getName() {
 		return firstToken.text();
 	}
