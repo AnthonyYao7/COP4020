@@ -196,6 +196,7 @@ public class TypeCheckVisitor implements ASTVisitor {
             type = nameDef.getType();
         }
         nameDef.setType(type);
+        st.insert(nameDef);
         return type;
     }
 
