@@ -15,6 +15,7 @@ public class SymbolTable {
 
     SymbolTable() {
         table = new HashMap<>();
+        scopeStack = new ArrayList<>();
     }
 
     public void enterScope(){

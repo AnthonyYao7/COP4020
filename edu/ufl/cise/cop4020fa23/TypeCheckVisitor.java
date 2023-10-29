@@ -4,16 +4,37 @@ import edu.ufl.cise.cop4020fa23.ast.*;
 import edu.ufl.cise.cop4020fa23.exceptions.PLCCompilerException;
 import edu.ufl.cise.cop4020fa23.exceptions.TypeCheckException;
 
-import javax.swing.event.ChangeEvent;
-import java.nio.channels.Channel;
 import java.util.List;
 
 public class TypeCheckVisitor implements ASTVisitor {
     Program root = null;
-    SymbolTable st = null;
+    SymbolTable st = new SymbolTable();
+
+    private boolean assignmentCompatible(Type leftType, Type rightType) {
+        if(leftType == rightType){
+            return true;
+        }
+        else if(leftType == Type.PIXEL && rightType == Type.INT) {
+            return true;
+        }
+        else if(leftType == Type.IMAGE &&
+                (rightType == Type.PIXEL ||
+                rightType == Type.INT||
+                rightType ==  Type.STRING)) {
+            return true;
+        }
+        return false;
+    }
 
     @Override
     public Object visitAssignmentStatement(AssignmentStatement assignmentStatement, Object arg) throws PLCCompilerException {
+        st.enterScope();
+        Type leftType = (Type) assignmentStatement.getlValue().visit(this, arg);
+        Type rightType = (Type) assignmentStatement.getE().visit(this, arg);
+
+        check(assignmentCompatible(leftType, rightType), assignmentStatement, "Types Incompatible");
+        st.leaveScope();
+
         return null;
     }
 
@@ -96,7 +117,7 @@ public class TypeCheckVisitor implements ASTVisitor {
 
     @Override
     public Object visitBlockStatement(StatementBlock statementBlock, Object arg) throws PLCCompilerException {
-        return null;
+        return visitBlock(statementBlock.getBlock(), arg);
     }
 
     @Override
@@ -179,7 +200,30 @@ public class TypeCheckVisitor implements ASTVisitor {
 
     @Override
     public Object visitLValue(LValue lValue, Object arg) throws PLCCompilerException {
-        return null;
+        lValue.setNameDef(st.lookup(lValue.getName()));
+        lValue.setType(lValue.getNameDef().getType());
+        Type inferLValueType = null;
+
+        if(lValue.getPixelSelector() == null && lValue.getChannelSelector() == null) {
+            inferLValueType = lValue.getType();
+        }
+        else if(lValue.getType() == Type.IMAGE &&  lValue.getPixelSelector() != null && lValue.getChannelSelector() == null) {
+            inferLValueType = Type.PIXEL;
+        }
+        else if(lValue.getType() == Type.IMAGE &&  lValue.getPixelSelector() != null && lValue.getChannelSelector() != null) {
+            inferLValueType = Type.INT;
+        }
+        else if(lValue.getType() == Type.IMAGE &&  lValue.getPixelSelector() == null && lValue.getChannelSelector() != null) {
+            inferLValueType = Type.IMAGE;
+        }
+        else if(lValue.getType() == Type.PIXEL && lValue.getPixelSelector() == null && lValue.getChannelSelector() != null) {
+            inferLValueType = Type.INT;
+        }
+        if(inferLValueType != null) {
+            lValue.setType(inferLValueType);
+        }
+
+        return lValue;
     }
 
     @Override
@@ -187,7 +231,6 @@ public class TypeCheckVisitor implements ASTVisitor {
         Type type;
 
         nameDef.getIdentToken();
-        nameDef.getDimension().visit(this, arg);
 
         if (nameDef.getDimension() == null){
             type = Type.IMAGE;
@@ -254,6 +297,7 @@ public class TypeCheckVisitor implements ASTVisitor {
 
     @Override
     public Object visitReturnStatement(ReturnStatement returnStatement, Object arg) throws PLCCompilerException {
+        Type exprType = (Type) returnStatement.getE().visit(this, arg);
         return null;
     }
 
