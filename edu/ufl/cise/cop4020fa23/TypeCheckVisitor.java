@@ -128,9 +128,7 @@ public class TypeCheckVisitor implements ASTVisitor {
     public Object visitChannelSelector(ChannelSelector channelSelector, Object arg) throws PLCCompilerException {
         Kind channel = channelSelector.color();
 
-        return channel;
-
-        //return null;
+        return null;
     }
 
     @Override
@@ -292,6 +290,25 @@ public class TypeCheckVisitor implements ASTVisitor {
     public Object visitPixelSelector(PixelSelector pixelSelector, Object arg) throws PLCCompilerException {
         Expr xExpr = pixelSelector.xExpr();
         Expr yExpr = pixelSelector.yExpr();
+
+        xExpr.visit(this, arg);
+        yExpr.visit(this, arg);
+
+        if (arg instanceof LValue) {
+            check(xExpr instanceof IdentExpr || xExpr instanceof NumLitExpr, pixelSelector, "xExpr is not Ident or NumLit");
+            check(yExpr instanceof IdentExpr || yExpr instanceof NumLitExpr, pixelSelector, "xExpr is not Ident or NumLit");
+
+            if(xExpr instanceof IdentExpr && st.lookup(((IdentExpr) xExpr).getName()) == null) {
+                st.insert(new SyntheticNameDef(((IdentExpr) xExpr).getName()));
+            }
+
+            if(yExpr instanceof IdentExpr && st.lookup(((IdentExpr) yExpr).getName()) == null) {
+                st.insert(new SyntheticNameDef(((IdentExpr) yExpr).getName()));
+            }
+        }
+
+        check(xExpr.getType() == Type.INT, pixelSelector, "xExpr is not Type INT");
+        check(yExpr.getType() == Type.INT, pixelSelector, "yExpr is not Type INT");
 
         return null;
     }
