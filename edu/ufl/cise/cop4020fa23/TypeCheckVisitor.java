@@ -94,7 +94,7 @@ public class TypeCheckVisitor implements ASTVisitor {
             inferBinaryType = leftType;
         }
         else {
-            throw new PLCCompilerException();
+            throw new TypeCheckException("Operand Types Don't Match");
         }
 
         binaryExpr.setType(inferBinaryType);
@@ -160,7 +160,8 @@ public class TypeCheckVisitor implements ASTVisitor {
                 expr == null ||
                 expr.getType() == nameDef.getType() ||
                 expr.getType() == Type.STRING ||
-                nameDef.getType() == Type.IMAGE, declaration, "declaration has invalid type");
+                nameDef.getType() == Type.IMAGE ||
+                nameDef.getType() == Type.VOID, declaration, "declaration has invalid type");
 
         declaration.setType(nameDef.getType());
         return declaration.getType();
@@ -268,6 +269,8 @@ public class TypeCheckVisitor implements ASTVisitor {
         Type type;
 
         nameDef.getIdentToken();
+
+        check(nameDef.getType() != Type.VOID, nameDef, "Invalid DataType");
 
         if (nameDef.getDimension() == null){
             type = Type.IMAGE;
