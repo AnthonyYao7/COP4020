@@ -50,6 +50,9 @@ public class SymbolTable {
         NameDef highest_obj = null;
         for (SymbolTableEntry ste : ll) {
             int index = Collections.binarySearch(scopeStack, ste.scopeNum);
+            if (index < 0) {
+                index = - index - 1;
+            }
             if (index > highest) {
                 highest = index;
                 highest_obj = ste.nameDef;

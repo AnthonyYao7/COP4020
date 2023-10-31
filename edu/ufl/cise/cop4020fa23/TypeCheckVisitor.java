@@ -29,6 +29,7 @@ public class TypeCheckVisitor implements ASTVisitor {
     @Override
     public Object visitAssignmentStatement(AssignmentStatement assignmentStatement, Object arg) throws PLCCompilerException {
         st.enterScope();
+
         Type lvalueType = (Type) assignmentStatement.getlValue().visit(this, arg);
         Type exprType = (Type) assignmentStatement.getE().visit(this, arg);
 
@@ -126,8 +127,6 @@ public class TypeCheckVisitor implements ASTVisitor {
 
     @Override
     public Object visitChannelSelector(ChannelSelector channelSelector, Object arg) throws PLCCompilerException {
-        Kind channel = channelSelector.color();
-
         return null;
     }
 
@@ -153,7 +152,10 @@ public class TypeCheckVisitor implements ASTVisitor {
         Expr expr = declaration.getInitializer();
         NameDef nameDef = declaration.getNameDef();
 
-        expr.visit(this, arg);
+        if (expr != null) {
+            expr.visit(this, arg);
+        }
+
         nameDef.visit(this, arg);
 
         check(
@@ -204,21 +206,17 @@ public class TypeCheckVisitor implements ASTVisitor {
 
     @Override
     public Object visitGuardedBlock(GuardedBlock guardedBlock, Object arg) throws PLCCompilerException {
-        Type guardType = (Type) guardedBlock.getBlock().visit(this, arg);
+        Type guardType = (Type) guardedBlock.getGuard().visit(this, arg);
+        check(guardType == Type.BOOLEAN, guardedBlock, "Guard type not type bool");
+        guardedBlock.getBlock().visit(this, arg);
 
-        if(guardType == Type.BOOLEAN) {
-            guardedBlock.getBlock().visit(this, arg);
-        }
-        else {
-            throw new PLCCompilerException("Guard type not type bool");
-        }
         return null;
     }
 
     @Override
     public Object visitIdentExpr(IdentExpr identExpr, Object arg) throws PLCCompilerException {
         NameDef nd = st.lookup(identExpr.getName());
-        check(nd != null, identExpr, "identifier has not been declared");
+        check(nd != null, identExpr, "identifier has not been declared "+ identExpr.getName());
         identExpr.setNameDef(nd);
         identExpr.setType(nd.getType());
         return nd.getType();
@@ -237,6 +235,15 @@ public class TypeCheckVisitor implements ASTVisitor {
 
     @Override
     public Object visitLValue(LValue lValue, Object arg) throws PLCCompilerException {
+        PixelSelector ps = lValue.getPixelSelector();
+        if (ps != null) {
+            ps.visit(this, lValue);
+        }
+        ChannelSelector cs = lValue.getChannelSelector();
+        if (cs != null) {
+            cs.visit(this, arg);
+        }
+
         lValue.setNameDef(st.lookup(lValue.getName()));
         lValue.setType(lValue.getNameDef().getType());
         Type inferLValueType = null;
@@ -268,16 +275,16 @@ public class TypeCheckVisitor implements ASTVisitor {
     public Object visitNameDef(NameDef nameDef, Object arg) throws PLCCompilerException {
         Type type;
 
-        nameDef.getIdentToken();
-
         check(nameDef.getType() != Type.VOID, nameDef, "Invalid DataType");
 
-        if (nameDef.getDimension() == null){
+        if (nameDef.getDimension() != null){
+            nameDef.getDimension().visit(this, arg);
             type = Type.IMAGE;
         }
         else {
             type = nameDef.getType();
         }
+
         nameDef.setType(type);
         st.insert(nameDef);
         return type;
@@ -294,21 +301,21 @@ public class TypeCheckVisitor implements ASTVisitor {
         Expr xExpr = pixelSelector.xExpr();
         Expr yExpr = pixelSelector.yExpr();
 
-        xExpr.visit(this, arg);
-        yExpr.visit(this, arg);
 
         if (arg instanceof LValue) {
             check(xExpr instanceof IdentExpr || xExpr instanceof NumLitExpr, pixelSelector, "xExpr is not Ident or NumLit");
             check(yExpr instanceof IdentExpr || yExpr instanceof NumLitExpr, pixelSelector, "xExpr is not Ident or NumLit");
 
-            if(xExpr instanceof IdentExpr && st.lookup(((IdentExpr) xExpr).getName()) == null) {
+            if (
+                xExpr instanceof IdentExpr && st.lookup(((IdentExpr) xExpr).getName()) == null ||
+                yExpr instanceof IdentExpr && st.lookup(((IdentExpr) yExpr).getName()) == null) {
                 st.insert(new SyntheticNameDef(((IdentExpr) xExpr).getName()));
-            }
-
-            if(yExpr instanceof IdentExpr && st.lookup(((IdentExpr) yExpr).getName()) == null) {
                 st.insert(new SyntheticNameDef(((IdentExpr) yExpr).getName()));
             }
         }
+
+        xExpr.visit(this, arg);
+        yExpr.visit(this, arg);
 
         check(xExpr.getType() == Type.INT, pixelSelector, "xExpr is not Type INT");
         check(yExpr.getType() == Type.INT, pixelSelector, "yExpr is not Type INT");
@@ -322,6 +329,18 @@ public class TypeCheckVisitor implements ASTVisitor {
         PixelSelector ps = postfixExpr.pixel();
         ChannelSelector cs = postfixExpr.channel();
 
+        Type inferPostfixExprType = getInferPostfixExprType(ps, cs, postfixExprType);
+
+        assert ps != null;
+        ps.visit(this, arg);
+        assert cs != null;
+        cs.visit(this, arg);
+
+        postfixExpr.setType(inferPostfixExprType);
+        return inferPostfixExprType;
+    }
+
+    private static Type getInferPostfixExprType(PixelSelector ps, ChannelSelector cs, Type postfixExprType) {
         Type inferPostfixExprType = null;
 
         if (ps == null && cs == null) {
@@ -335,8 +354,6 @@ public class TypeCheckVisitor implements ASTVisitor {
         } else if (postfixExprType == Type.PIXEL && ps == null) {
             inferPostfixExprType = Type.INT;
         }
-
-        postfixExpr.setType(inferPostfixExprType);
         return inferPostfixExprType;
     }
 
