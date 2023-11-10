@@ -279,13 +279,14 @@ public class TypeCheckVisitor implements ASTVisitor {
         if (nameDef.getDimension() != null){
             nameDef.getDimension().visit(this, arg);
             type = Type.IMAGE;
-        }
-        else {
+        } else {
             type = nameDef.getType();
         }
 
         nameDef.setType(type);
-        st.insert(nameDef);
+        int scope = st.insert(nameDef);
+        nameDef.setJavaName(nameDef.getName() + '$' + scope);
+
         return type;
     }
 

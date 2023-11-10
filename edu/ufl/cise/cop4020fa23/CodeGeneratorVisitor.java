@@ -11,12 +11,56 @@ public class CodeGeneratorVisitor implements ASTVisitor {
 
     @Override
     public Object visitBinaryExpr(BinaryExpr binaryExpr, Object arg) throws PLCCompilerException {
-        return null;
+        StringBuilder sb;
+        if (arg != null) {
+            sb = (StringBuilder) arg;
+        } else {
+            sb = new StringBuilder();
+        }
+
+        Expr leftExpr = binaryExpr.getLeftExpr();
+        Expr rightExpr = binaryExpr.getRightExpr();
+        Kind op = binaryExpr.getOpKind();
+
+        if (
+                leftExpr.getType() == Type.STRING &&
+                op == Kind.EQ) {
+            leftExpr.visit(this, sb);
+            sb.append(".equals(");
+            rightExpr.visit(this, sb);
+            sb.append(')');
+        } else if (op == Kind.EXP) {
+            sb.append("((int)Math.round(Math.pow(");
+            leftExpr.visit(this, sb);
+            sb.append(',');
+            rightExpr.visit(this, sb);
+            sb.append("))");
+        } else {
+            sb.append('(');
+            leftExpr.visit(this, sb);
+            sb.append(binaryExpr.getOp().toString());
+        }
+
+        return (arg == null ? sb.toString() : null);
     }
 
     @Override
     public Object visitBlock(Block block, Object arg) throws PLCCompilerException {
-        return null;
+        StringBuilder sb;
+        if (arg != null) {
+            sb = (StringBuilder) arg;
+        } else {
+            sb = new StringBuilder();
+        }
+
+        sb.append('{');
+        for (Block.BlockElem be : block.getElems()) {
+            be.visit(this, sb);
+            sb.append(";\n");
+        }
+        sb.append("}\n");
+
+        return (arg == null ? sb.toString() : null);
     }
 
     @Override
@@ -31,12 +75,40 @@ public class CodeGeneratorVisitor implements ASTVisitor {
 
     @Override
     public Object visitConditionalExpr(ConditionalExpr conditionalExpr, Object arg) throws PLCCompilerException {
-        return null;
+        StringBuilder sb;
+        if (arg != null) {
+            sb = (StringBuilder) arg;
+        } else {
+            sb = new StringBuilder();
+        }
+
+        sb.append('(');
+        conditionalExpr.getGuardExpr().visit(this, sb);
+        sb.append('?');
+        conditionalExpr.getTrueExpr().visit(this, sb);
+        sb.append(':');
+        conditionalExpr.getFalseExpr().visit(this, sb);
+        sb.append(')');
+
+        return (arg == null ? sb.toString() : null);
     }
 
     @Override
     public Object visitDeclaration(Declaration declaration, Object arg) throws PLCCompilerException {
-        return null;
+        StringBuilder sb;
+        if (arg != null) {
+            sb = (StringBuilder) arg;
+        } else {
+            sb = new StringBuilder();
+        }
+
+        declaration.getNameDef().visit(this, sb);
+        if (declaration.getInitializer() != null) {
+            sb.append('=');
+            declaration.getInitializer().visit(this, sb);
+        }
+
+        return (arg == null ? sb.toString() : null);
     }
 
     @Override
@@ -76,7 +148,18 @@ public class CodeGeneratorVisitor implements ASTVisitor {
 
     @Override
     public Object visitNameDef(NameDef nameDef, Object arg) throws PLCCompilerException {
-        return null;
+        StringBuilder sb;
+        if (arg != null) {
+            sb = (StringBuilder) arg;
+        } else {
+            sb = new StringBuilder();
+        }
+
+        sb.append(nameDef.getType());
+        sb.append(' ');
+        sb.append(nameDef.getJavaName());
+
+        return (arg == null ? sb.toString() : null);
     }
 
     @Override
@@ -96,7 +179,24 @@ public class CodeGeneratorVisitor implements ASTVisitor {
 
     @Override
     public Object visitProgram(Program program, Object arg) throws PLCCompilerException {
-        return null;
+        StringBuilder sb = new StringBuilder();
+
+        sb.append("public class ");
+        sb.append(program.getName());
+        sb.append("{\npublic static ");
+        sb.append(program.getType());
+        sb.append(" apply(\n");
+
+        for (NameDef nd : program.getParams()) {
+            nd.visit(this, sb);
+            sb.append(',');
+        }
+
+        sb.append("\n)");
+        program.getBlock().visit(this, sb);
+        sb.append("\n}");
+
+        return sb.toString();
     }
 
     @Override

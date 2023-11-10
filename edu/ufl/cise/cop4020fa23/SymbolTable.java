@@ -26,7 +26,7 @@ public class SymbolTable {
         scopeStack.remove(scopeStack.size() - 1);
     }
 
-    public void insert(NameDef nameDef) throws TypeCheckException {
+    public int insert(NameDef nameDef) throws TypeCheckException {
         String ident = nameDef.getName();
 
         LinkedList<SymbolTableEntry> ll = table.computeIfAbsent(ident, k -> new LinkedList<>());
@@ -38,6 +38,7 @@ public class SymbolTable {
         }
 
         ll.push(new SymbolTableEntry(scope, nameDef));
+        return scope;
     }
 
     public NameDef lookup(String ident) {
