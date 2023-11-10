@@ -8,7 +8,7 @@ import java.util.*;
 public class SymbolTable {
     private record SymbolTableEntry(int scopeNum, NameDef nameDef) {}
 
-    int scope = 0;
+    int scope = -1;
 
     HashMap<String, LinkedList<SymbolTableEntry>> table;
     ArrayList<Integer> scopeStack;
@@ -19,7 +19,7 @@ public class SymbolTable {
     }
 
     public void enterScope(){
-        scopeStack.add(scope++);
+        scopeStack.add(++scope);
     }
 
     public void leaveScope(){
@@ -48,10 +48,11 @@ public class SymbolTable {
 
         int highest = -1;
         NameDef highest_obj = null;
+
         for (SymbolTableEntry ste : ll) {
             int index = Collections.binarySearch(scopeStack, ste.scopeNum);
             if (index < 0) {
-                index = - index - 1;
+                continue;
             }
             if (index > highest) {
                 highest = index;

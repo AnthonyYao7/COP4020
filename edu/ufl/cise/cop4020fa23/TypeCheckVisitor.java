@@ -161,9 +161,8 @@ public class TypeCheckVisitor implements ASTVisitor {
         check(
                 expr == null ||
                 expr.getType() == nameDef.getType() ||
-                expr.getType() == Type.STRING ||
-                nameDef.getType() == Type.IMAGE ||
-                nameDef.getType() == Type.VOID, declaration, "declaration has invalid type");
+                (expr.getType() == Type.STRING && nameDef.getType() == Type.IMAGE),
+                declaration, "declaration has invalid type");
 
         declaration.setType(nameDef.getType());
         return declaration.getType();
