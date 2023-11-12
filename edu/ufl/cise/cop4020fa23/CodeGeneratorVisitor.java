@@ -16,9 +16,9 @@ public class CodeGeneratorVisitor implements ASTVisitor {
         LValue lv = assignmentStatement.getlValue();
         Expr expr = assignmentStatement.getE();
 
-        lv.visit(this, sb);
+        sb.append(lv.visit(this, sb));
         sb.append('=');
-        expr.visit(this, sb);
+        sb.append(expr.visit(this, sb));
 
         return (arg == null ? sb.toString() : null);
     }
@@ -45,14 +45,14 @@ public class CodeGeneratorVisitor implements ASTVisitor {
             sb.append(')');
         } else if (op == Kind.EXP) {
             sb.append("((int)Math.round(Math.pow(");
-            sb.append(leftExpr.visit(this, sb));
+            leftExpr.visit(this, sb);
             sb.append(',');
-            sb.append(rightExpr.visit(this, sb));
+            rightExpr.visit(this, sb);
             sb.append(")))");
         } else {
             sb.append('(');
             leftExpr.visit(this, sb);
-            sb.append(binaryExpr.getOp().toString());
+            sb.append(binaryExpr.getOp().text());
             rightExpr.visit(this, sb);
             sb.append(')');
         }
@@ -111,7 +111,7 @@ public class CodeGeneratorVisitor implements ASTVisitor {
         sb.append('(');
         conditionalExpr.getGuardExpr().visit(this, sb);
         sb.append('?');
-        conditionalExpr.getTrueExpr().visit(this, sb);
+        sb.append(conditionalExpr.getTrueExpr().visit(this, sb));
         sb.append(':');
         conditionalExpr.getFalseExpr().visit(this, sb);
         sb.append(')');
@@ -129,6 +129,9 @@ public class CodeGeneratorVisitor implements ASTVisitor {
         }
 
         declaration.getNameDef().visit(this, sb);
+        sb.append(fixTyping(declaration.getNameDef().getType()));
+        sb.append(' ');
+        sb.append(declaration.getNameDef().getJavaName());
         if (declaration.getInitializer() != null) {
             sb.append('=');
             declaration.getInitializer().visit(this, sb);
@@ -159,7 +162,16 @@ public class CodeGeneratorVisitor implements ASTVisitor {
 
     @Override
     public Object visitIdentExpr(IdentExpr identExpr, Object arg) throws PLCCompilerException {
-        return identExpr.getNameDef().getJavaName();
+        StringBuilder sb;
+        if (arg != null) {
+            sb = (StringBuilder) arg;
+        } else {
+            sb = new StringBuilder();
+        }
+
+        sb.append(identExpr.getNameDef().getJavaName());
+
+        return (arg == null ? sb.toString() : null);
     }
 
     @Override
@@ -169,7 +181,16 @@ public class CodeGeneratorVisitor implements ASTVisitor {
 
     @Override
     public Object visitLValue(LValue lValue, Object arg) throws PLCCompilerException {
-        return lValue.getNameDef().getJavaName();
+        StringBuilder sb;
+        if (arg != null) {
+            sb = (StringBuilder) arg;
+        } else {
+            sb = new StringBuilder();
+        }
+
+        sb.append(lValue.getNameDef().getJavaName());
+
+        return (arg == null ? sb.toString() : null);
     }
 
     @Override
@@ -181,7 +202,7 @@ public class CodeGeneratorVisitor implements ASTVisitor {
             sb = new StringBuilder();
         }
 
-        sb.append(nameDef.getType());
+        sb.append(fixTyping(nameDef.getType()));
         sb.append(' ');
         sb.append(nameDef.getJavaName());
 
@@ -190,7 +211,16 @@ public class CodeGeneratorVisitor implements ASTVisitor {
 
     @Override
     public Object visitNumLitExpr(NumLitExpr numLitExpr, Object arg) throws PLCCompilerException {
-        return numLitExpr.getText();
+        StringBuilder sb;
+        if (arg != null) {
+            sb = (StringBuilder) arg;
+        } else {
+            sb = new StringBuilder();
+        }
+
+        sb.append(numLitExpr.getText());
+
+        return (arg == null ? sb.toString() : null);
     }
 
     @Override
@@ -222,10 +252,7 @@ public class CodeGeneratorVisitor implements ASTVisitor {
                 sb.append(',');
             }
             first = false;
-            //nd.visit(this, sb);
-            sb.append(fixTyping(nd.getType()));
-            sb.append(' ');
-            sb.append(nd.getJavaName());
+            nd.visit(this, sb);
         }
 
         sb.append(")\n");
@@ -254,7 +281,16 @@ public class CodeGeneratorVisitor implements ASTVisitor {
 
     @Override
     public Object visitStringLitExpr(StringLitExpr stringLitExpr, Object arg) throws PLCCompilerException {
-        return stringLitExpr.getText();
+        StringBuilder sb;
+        if (arg != null) {
+            sb = (StringBuilder) arg;
+        } else {
+            sb = new StringBuilder();
+        }
+
+        sb.append(stringLitExpr.getText());
+
+        return (arg == null ? sb.toString() : null);
     }
 
     @Override
@@ -303,7 +339,12 @@ public class CodeGeneratorVisitor implements ASTVisitor {
             sb = new StringBuilder();
         }
 
-        sb.append(booleanLitExpr.getText());
+        if(booleanLitExpr.getText().equals("TRUE")) {
+            sb.append("true");
+        }
+        if (booleanLitExpr.getText().equals("FALSE")){
+            sb.append("false");
+        }
 
         return (arg == null ? sb.toString() : null);
     }
