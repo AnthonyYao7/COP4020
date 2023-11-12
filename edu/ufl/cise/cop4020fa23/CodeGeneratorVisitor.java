@@ -128,10 +128,10 @@ public class CodeGeneratorVisitor implements ASTVisitor {
             sb = new StringBuilder();
         }
 
-        sb.append(declaration.getNameDef().visit(this, sb));
+        declaration.getNameDef().visit(this, sb);
         if (declaration.getInitializer() != null) {
             sb.append('=');
-            sb.append(declaration.getInitializer().visit(this, sb));
+            declaration.getInitializer().visit(this, sb);
         }
 
         return (arg == null ? sb.toString() : null);
@@ -214,14 +214,21 @@ public class CodeGeneratorVisitor implements ASTVisitor {
         sb.append(program.getName());
         sb.append("{\npublic static ");
         sb.append(fixTyping(program.getType()));
-        sb.append(" apply(\n");
+        sb.append(" apply(");
 
+        boolean first = true;
         for (NameDef nd : program.getParams()) {
-            nd.visit(this, sb);
-            sb.append(',');
+            if(!first) {
+                sb.append(',');
+            }
+            first = false;
+            //nd.visit(this, sb);
+            sb.append(fixTyping(nd.getType()));
+            sb.append(' ');
+            sb.append(nd.getJavaName());
         }
 
-        sb.append("\n)");
+        sb.append(")\n");
         program.getBlock().visit(this, sb);
         sb.append("\n}");
 
@@ -295,9 +302,9 @@ public class CodeGeneratorVisitor implements ASTVisitor {
         } else {
             sb = new StringBuilder();
         }
-//
-//        sb.append("true");
-//
+
+        sb.append(booleanLitExpr.getText());
+
         return (arg == null ? sb.toString() : null);
     }
 
@@ -307,10 +314,21 @@ public class CodeGeneratorVisitor implements ASTVisitor {
     }
 
     public String fixTyping(Type type) {
-        if(type == Type.INT) {
-            return "int";
+        switch (type) {
+            case INT:
+                return "int";
+            case BOOLEAN:
+                return "boolean";
+            case IMAGE:
+                return "Image";  // Assuming Image is a custom class or type
+            case VOID:
+                return "void";
+            case PIXEL:
+                return "Pixel";  // Assuming Pixel is a custom class or type
+            case STRING:
+                return "String";
+            default:
+                throw new IllegalArgumentException("Unsupported type: " + type);
         }
-
-        return null;
     }
 }
