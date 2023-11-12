@@ -9,11 +9,11 @@
  */
 package edu.ufl.cise.cop4020fa23.ast;
 
-import java.util.Objects;
-
 import edu.ufl.cise.cop4020fa23.IToken;
 import edu.ufl.cise.cop4020fa23.Kind;
 import edu.ufl.cise.cop4020fa23.exceptions.PLCCompilerException;
+
+import java.util.Objects;
 
 public class UnaryExpr extends Expr {
 
@@ -56,6 +56,10 @@ public class UnaryExpr extends Expr {
 
 	public Kind getOp() {
 		return op.kind();
+	}
+
+	public IToken getOpItoken() {
+		return op;
 	}
 
 	public Expr getExpr() {

@@ -16,9 +16,9 @@ public class CodeGeneratorVisitor implements ASTVisitor {
         LValue lv = assignmentStatement.getlValue();
         Expr expr = assignmentStatement.getE();
 
-        sb.append(lv.visit(this, sb));
+        lv.visit(this, sb);
         sb.append('=');
-        sb.append(expr.visit(this, sb));
+        expr.visit(this, sb);
 
         return (arg == null ? sb.toString() : null);
     }
@@ -111,7 +111,7 @@ public class CodeGeneratorVisitor implements ASTVisitor {
         sb.append('(');
         conditionalExpr.getGuardExpr().visit(this, sb);
         sb.append('?');
-        sb.append(conditionalExpr.getTrueExpr().visit(this, sb));
+        conditionalExpr.getTrueExpr().visit(this, sb);
         sb.append(':');
         conditionalExpr.getFalseExpr().visit(this, sb);
         sb.append(')');
@@ -129,9 +129,6 @@ public class CodeGeneratorVisitor implements ASTVisitor {
         }
 
         declaration.getNameDef().visit(this, sb);
-        sb.append(fixTyping(declaration.getNameDef().getType()));
-        sb.append(' ');
-        sb.append(declaration.getNameDef().getJavaName());
         if (declaration.getInitializer() != null) {
             sb.append('=');
             declaration.getInitializer().visit(this, sb);
@@ -306,7 +303,7 @@ public class CodeGeneratorVisitor implements ASTVisitor {
         Expr expr = unaryExpr.getExpr();
 
         sb.append('(');
-        sb.append(op.toString());
+        sb.append(unaryExpr.getOpItoken().text());
         expr.visit(this, sb);
         sb.append(')');
 
