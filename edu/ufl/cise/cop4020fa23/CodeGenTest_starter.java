@@ -108,7 +108,7 @@ class CodeGenTest_starter {
 	@Test
 	void cg5() throws Exception {
 		String input = """
-				int f(int a)
+				int f(int a)t
 				<: 
 				write a;
 				^a+1;

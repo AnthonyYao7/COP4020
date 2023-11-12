@@ -58,6 +58,8 @@ public class UnaryExpr extends Expr {
 		return op.kind();
 	}
 
+	public IToken getOpToken() { return op; }
+
 	public Expr getExpr() {
 		return e;
 	}

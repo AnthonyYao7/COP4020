@@ -45,14 +45,14 @@ public class CodeGeneratorVisitor implements ASTVisitor {
             sb.append(')');
         } else if (op == Kind.EXP) {
             sb.append("((int)Math.round(Math.pow(");
-            sb.append(leftExpr.visit(this, sb));
+            leftExpr.visit(this, sb);
             sb.append(',');
-            sb.append(rightExpr.visit(this, sb));
+            rightExpr.visit(this, sb);
             sb.append(")))");
         } else {
             sb.append('(');
             leftExpr.visit(this, sb);
-            sb.append(binaryExpr.getOp().toString());
+            sb.append(binaryExpr.getOp().text());
             rightExpr.visit(this, sb);
             sb.append(')');
         }
@@ -159,7 +159,16 @@ public class CodeGeneratorVisitor implements ASTVisitor {
 
     @Override
     public Object visitIdentExpr(IdentExpr identExpr, Object arg) throws PLCCompilerException {
-        return identExpr.getNameDef().getJavaName();
+        StringBuilder sb;
+        if (arg != null) {
+            sb = (StringBuilder) arg;
+        } else {
+            sb = new StringBuilder();
+        }
+
+        sb.append(identExpr.getNameDef().getJavaName());
+
+        return (arg == null ? sb.toString() : null);
     }
 
     @Override
@@ -181,7 +190,7 @@ public class CodeGeneratorVisitor implements ASTVisitor {
             sb = new StringBuilder();
         }
 
-        sb.append(nameDef.getType());
+        sb.append(fixTyping(nameDef.getType()));
         sb.append(' ');
         sb.append(nameDef.getJavaName());
 
@@ -190,7 +199,16 @@ public class CodeGeneratorVisitor implements ASTVisitor {
 
     @Override
     public Object visitNumLitExpr(NumLitExpr numLitExpr, Object arg) throws PLCCompilerException {
-        return numLitExpr.getText();
+        StringBuilder sb;
+        if (arg != null) {
+            sb = (StringBuilder) arg;
+        } else {
+            sb = new StringBuilder();
+        }
+
+        sb.append(numLitExpr.getText());
+
+        return (arg == null ? sb.toString() : null);
     }
 
     @Override
@@ -207,7 +225,9 @@ public class CodeGeneratorVisitor implements ASTVisitor {
     public Object visitProgram(Program program, Object arg) throws PLCCompilerException {
         StringBuilder sb = new StringBuilder();
 
-        sb.append("package edu.ufl.cise.cop4020fa23;\n");
+        sb.append("package ");
+        sb.append((String) arg);
+        sb.append(";\n");
         sb.append("import edu.ufl.cise.cop4020fa23.runtime.ConsoleIO;\n");
 
         sb.append("\npublic class ");
@@ -216,10 +236,17 @@ public class CodeGeneratorVisitor implements ASTVisitor {
         sb.append(fixTyping(program.getType()));
         sb.append(" apply(\n");
 
-        for (NameDef nd : program.getParams()) {
-            nd.visit(this, sb);
-            sb.append(',');
+        for (int i = 0; i < program.getParams().size(); ++i) {
+            if (i != 0) {
+                sb.append(',');
+            }
+            program.getParams().get(i).visit(this, sb);
         }
+
+//        for (NameDef nd : program.getParams()) {
+//            nd.visit(this, sb);
+//            sb.append(',');
+//        }
 
         sb.append("\n)");
         program.getBlock().visit(this, sb);
@@ -259,11 +286,11 @@ public class CodeGeneratorVisitor implements ASTVisitor {
             sb = new StringBuilder();
         }
 
-        Kind op = unaryExpr.getOp();
+        IToken op = unaryExpr.getOpToken();
         Expr expr = unaryExpr.getExpr();
 
         sb.append('(');
-        sb.append(op.toString());
+        sb.append(op.text());
         expr.visit(this, sb);
         sb.append(')');
 
@@ -295,9 +322,9 @@ public class CodeGeneratorVisitor implements ASTVisitor {
         } else {
             sb = new StringBuilder();
         }
-//
-//        sb.append("true");
-//
+
+        sb.append(booleanLitExpr.getText());
+
         return (arg == null ? sb.toString() : null);
     }
 
@@ -307,10 +334,13 @@ public class CodeGeneratorVisitor implements ASTVisitor {
     }
 
     public String fixTyping(Type type) {
-        if(type == Type.INT) {
-            return "int";
-        }
-
-        return null;
+        return switch(type) {
+            case INT -> "int";
+            case BOOLEAN -> "boolean";
+            case IMAGE -> null;
+            case VOID -> "void";
+            case PIXEL -> null;
+            case STRING -> "String";
+        };
     }
 }
