@@ -128,10 +128,10 @@ public class CodeGeneratorVisitor implements ASTVisitor {
             sb = new StringBuilder();
         }
 
-        sb.append(declaration.getNameDef().visit(this, sb));
+        declaration.getNameDef().visit(this, sb);
         if (declaration.getInitializer() != null) {
             sb.append('=');
-            sb.append(declaration.getInitializer().visit(this, sb));
+            declaration.getInitializer().visit(this, sb);
         }
 
         return (arg == null ? sb.toString() : null);
@@ -178,7 +178,16 @@ public class CodeGeneratorVisitor implements ASTVisitor {
 
     @Override
     public Object visitLValue(LValue lValue, Object arg) throws PLCCompilerException {
-        return lValue.getNameDef().getJavaName();
+        StringBuilder sb;
+        if (arg != null) {
+            sb = (StringBuilder) arg;
+        } else {
+            sb = new StringBuilder();
+        }
+
+        sb.append(lValue.getNameDef().getJavaName());
+
+        return (arg == null ? sb.toString() : null);
     }
 
     @Override
@@ -274,7 +283,16 @@ public class CodeGeneratorVisitor implements ASTVisitor {
 
     @Override
     public Object visitStringLitExpr(StringLitExpr stringLitExpr, Object arg) throws PLCCompilerException {
-        return stringLitExpr.getText();
+        StringBuilder sb;
+        if (arg != null) {
+            sb = (StringBuilder) arg;
+        } else {
+            sb = new StringBuilder();
+        }
+
+        sb.append(stringLitExpr.getText());
+
+        return (arg == null ? sb.toString() : null);
     }
 
     @Override
