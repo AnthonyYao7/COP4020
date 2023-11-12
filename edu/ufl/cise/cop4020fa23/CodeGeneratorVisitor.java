@@ -341,7 +341,7 @@ public class CodeGeneratorVisitor implements ASTVisitor {
             sb = new StringBuilder();
         }
 
-        sb.append(booleanLitExpr.getText());
+        sb.append(booleanLitExpr.getText().toLowerCase());
 
         return (arg == null ? sb.toString() : null);
     }
