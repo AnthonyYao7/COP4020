@@ -1,25 +1,13 @@
 package edu.ufl.cise.cop4020fa23;
 
-import static org.junit.jupiter.api.Assertions.*;
-
-import java.awt.image.BufferedImage;
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
-
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Test;
-
 import edu.ufl.cise.cop4020fa23.DynamicJavaCompileAndExecute.DynamicClassLoader;
 import edu.ufl.cise.cop4020fa23.DynamicJavaCompileAndExecute.DynamicCompiler;
 import edu.ufl.cise.cop4020fa23.DynamicJavaCompileAndExecute.PLCLangExec;
-import edu.ufl.cise.cop4020fa23.ast.AST;
-import edu.ufl.cise.cop4020fa23.ast.Program;
-import edu.ufl.cise.cop4020fa23.ast.ASTVisitor;
-import edu.ufl.cise.cop4020fa23.exceptions.LexicalException;
-import edu.ufl.cise.cop4020fa23.exceptions.PLCCompilerException;
-import edu.ufl.cise.cop4020fa23.exceptions.TypeCheckException;
-import edu.ufl.cise.cop4020fa23.runtime.ConsoleIO;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 class CodeGenTest_starter {
 	
@@ -381,5 +369,26 @@ class CodeGenTest_starter {
 		Object result = PLCLangExec.runCode(packageName,source,a,b);
 		show(result);
 		assertEquals(a + " " + b, result);		
+	}
+
+	@Test
+	void testSetup() throws Exception {
+		String javaCode = """
+               package edu.ufl.cise.cop4020fa23;
+               import edu.ufl.cise.cop4020fa23.runtime.ConsoleIO;
+               public class Three{
+                  public static void apply(){
+                    ConsoleIO.write(3);
+                  }
+                }
+		""";
+		String packageName = "edu.ufl.cise.cop4020fa23";
+		String fullyQualifiedName = "edu.ufl.cise.cop4020fa23.Three";
+		Object[] params = {};
+		//Invoke Java compiler to obtain classfile
+		byte[] byteCode = DynamicCompiler.compile(fullyQualifiedName, javaCode);
+		//Load generated classfile and execute its "apply" method.
+		Object result = DynamicClassLoader.loadClassAndRunMethod(byteCode, fullyQualifiedName, "apply", params);
+		assertNull(result);
 	}
 }

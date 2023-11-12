@@ -6,7 +6,21 @@ import edu.ufl.cise.cop4020fa23.exceptions.PLCCompilerException;
 public class CodeGeneratorVisitor implements ASTVisitor {
     @Override
     public Object visitAssignmentStatement(AssignmentStatement assignmentStatement, Object arg) throws PLCCompilerException {
-        return null;
+        StringBuilder sb;
+        if (arg != null) {
+            sb = (StringBuilder) arg;
+        } else {
+            sb = new StringBuilder();
+        }
+
+        LValue lv = assignmentStatement.getlValue();
+        Expr expr = assignmentStatement.getE();
+
+        lv.visit(this, sb);
+        sb.append('=');
+        expr.visit(this, sb);
+
+        return (arg == null ? sb.toString() : null);
     }
 
     @Override
@@ -31,14 +45,16 @@ public class CodeGeneratorVisitor implements ASTVisitor {
             sb.append(')');
         } else if (op == Kind.EXP) {
             sb.append("((int)Math.round(Math.pow(");
-            leftExpr.visit(this, sb);
+            sb.append(leftExpr.visit(this, sb));
             sb.append(',');
-            rightExpr.visit(this, sb);
-            sb.append("))");
+            sb.append(rightExpr.visit(this, sb));
+            sb.append(")))");
         } else {
             sb.append('(');
             leftExpr.visit(this, sb);
             sb.append(binaryExpr.getOp().toString());
+            rightExpr.visit(this, sb);
+            sb.append(')');
         }
 
         return (arg == null ? sb.toString() : null);
@@ -53,19 +69,29 @@ public class CodeGeneratorVisitor implements ASTVisitor {
             sb = new StringBuilder();
         }
 
-        sb.append('{');
+        sb.append("{");
         for (Block.BlockElem be : block.getElems()) {
             be.visit(this, sb);
             sb.append(";\n");
         }
         sb.append("}\n");
 
+
         return (arg == null ? sb.toString() : null);
     }
 
     @Override
     public Object visitBlockStatement(StatementBlock statementBlock, Object arg) throws PLCCompilerException {
-        return null;
+        StringBuilder sb;
+        if (arg != null) {
+            sb = (StringBuilder) arg;
+        } else {
+            sb = new StringBuilder();
+        }
+
+        statementBlock.getBlock().visit(this, sb);
+
+        return (arg == null ? sb.toString() : null);
     }
 
     @Override
@@ -102,10 +128,10 @@ public class CodeGeneratorVisitor implements ASTVisitor {
             sb = new StringBuilder();
         }
 
-        declaration.getNameDef().visit(this, sb);
+        sb.append(declaration.getNameDef().visit(this, sb));
         if (declaration.getInitializer() != null) {
             sb.append('=');
-            declaration.getInitializer().visit(this, sb);
+            sb.append(declaration.getInitializer().visit(this, sb));
         }
 
         return (arg == null ? sb.toString() : null);
@@ -133,7 +159,7 @@ public class CodeGeneratorVisitor implements ASTVisitor {
 
     @Override
     public Object visitIdentExpr(IdentExpr identExpr, Object arg) throws PLCCompilerException {
-        return null;
+        return identExpr.getNameDef().getJavaName();
     }
 
     @Override
@@ -143,7 +169,7 @@ public class CodeGeneratorVisitor implements ASTVisitor {
 
     @Override
     public Object visitLValue(LValue lValue, Object arg) throws PLCCompilerException {
-        return null;
+        return lValue.getNameDef().getJavaName();
     }
 
     @Override
@@ -164,7 +190,7 @@ public class CodeGeneratorVisitor implements ASTVisitor {
 
     @Override
     public Object visitNumLitExpr(NumLitExpr numLitExpr, Object arg) throws PLCCompilerException {
-        return null;
+        return numLitExpr.getText();
     }
 
     @Override
@@ -181,10 +207,13 @@ public class CodeGeneratorVisitor implements ASTVisitor {
     public Object visitProgram(Program program, Object arg) throws PLCCompilerException {
         StringBuilder sb = new StringBuilder();
 
-        sb.append("public class ");
+        sb.append("package edu.ufl.cise.cop4020fa23;\n");
+        sb.append("import edu.ufl.cise.cop4020fa23.runtime.ConsoleIO;\n");
+
+        sb.append("\npublic class ");
         sb.append(program.getName());
         sb.append("{\npublic static ");
-        sb.append(program.getType());
+        sb.append(fixTyping(program.getType()));
         sb.append(" apply(\n");
 
         for (NameDef nd : program.getParams()) {
@@ -201,31 +230,87 @@ public class CodeGeneratorVisitor implements ASTVisitor {
 
     @Override
     public Object visitReturnStatement(ReturnStatement returnStatement, Object arg) throws PLCCompilerException {
-        return null;
+        StringBuilder sb;
+        if (arg != null) {
+            sb = (StringBuilder) arg;
+        } else {
+            sb = new StringBuilder();
+        }
+
+        Expr expr = returnStatement.getE();
+
+        sb.append("return ");
+        expr.visit(this, sb);
+
+        return (arg == null ? sb.toString() : null);
     }
 
     @Override
     public Object visitStringLitExpr(StringLitExpr stringLitExpr, Object arg) throws PLCCompilerException {
-        return null;
+        return stringLitExpr.getText();
     }
 
     @Override
     public Object visitUnaryExpr(UnaryExpr unaryExpr, Object arg) throws PLCCompilerException {
-        return null;
+        StringBuilder sb;
+        if (arg != null) {
+            sb = (StringBuilder) arg;
+        } else {
+            sb = new StringBuilder();
+        }
+
+        Kind op = unaryExpr.getOp();
+        Expr expr = unaryExpr.getExpr();
+
+        sb.append('(');
+        sb.append(op.toString());
+        expr.visit(this, sb);
+        sb.append(')');
+
+        return (arg == null ? sb.toString() : null);
     }
 
     @Override
     public Object visitWriteStatement(WriteStatement writeStatement, Object arg) throws PLCCompilerException {
-        return null;
+        StringBuilder sb;
+        if (arg != null) {
+            sb = (StringBuilder) arg;
+        } else {
+            sb = new StringBuilder();
+        }
+
+
+        sb.append("ConsoleIO.write(");
+        writeStatement.getExpr().visit(this, sb);
+        sb.append(')');
+
+        return (arg == null ? sb.toString() : null);
     }
 
     @Override
     public Object visitBooleanLitExpr(BooleanLitExpr booleanLitExpr, Object arg) throws PLCCompilerException {
-        return null;
+        StringBuilder sb;
+        if (arg != null) {
+            sb = (StringBuilder) arg;
+        } else {
+            sb = new StringBuilder();
+        }
+//
+//        sb.append("true");
+//
+        return (arg == null ? sb.toString() : null);
     }
 
     @Override
     public Object visitConstExpr(ConstExpr constExpr, Object arg) throws PLCCompilerException {
+        return null;
+    }
+
+    public String fixTyping(Type type) {
+        if(type == Type.INT) {
+            return "int";
+        }
+
         return null;
     }
 }
