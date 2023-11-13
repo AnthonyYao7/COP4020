@@ -405,39 +405,33 @@ public class Lexer implements ILexer {
 	};
 
 
-
 	public Lexer(String input) {
 		this.input = input;
 	}
 
 	@Override
 	public IToken next() throws LexicalException {
-
-        /*
-         * Notes:
-         * Test 11: Should throw lexical exception because number is too large (all 9s)
-         * Test 12: Haven't implemented ops and seps
-         * Test 13: Haven't implemented EOF token
-         * Test 14: Could be because special characters are not implemented yet
-         * Test 15: I might have messed up the transition function for identifiers - yes (but now it's because haven't implemented ops and seps)
-         * Test 16: Special characters
-         */
-        if (pos == input.length())
+        if (pos == input.length()) {
             return new Token(EOF, 0, 0, null, new SourceLocation(row, col));
+        }
 
         int cr = -1, cc = -1;
 		State cur = State.START, last = State.START;
 		StringBuilder text = new StringBuilder();
         boolean last_whitespace = false;
 
-		while (cur != State.FINISH && pos < input.length())
-		{
-            char c = input.charAt(pos++);
+		while (cur != State.FINISH && pos <= input.length()) {
+            char c;
+            if (pos == input.length()) {
+                c = '\n';
+            } else {
+                c = input.charAt(pos);
+            }
 
+            ++pos;
 			++col;
 
-			if (is_newline(c))
-			{
+			if (is_newline(c)) {
 				++row;
 				col = 0;
 			}
@@ -445,16 +439,13 @@ public class Lexer implements ILexer {
             last = cur;
             cur = transitions[cur.ordinal()].apply(c);
 
-            if ((is_whitespace(c) && cur != State.STR_LIT_1) || cur == State.HASH || cur == State.COMMENT)
-            {
+            if ((is_whitespace(c) && cur != State.STR_LIT_1) || cur == State.HASH || cur == State.COMMENT) {
                 last_whitespace = true;
             }
-            else
-            {
+            else {
                 last_whitespace = is_whitespace(c);
 
-                if (cc == -1 || cr == -1)
-                {
+                if (cc == -1 || cr == -1) {
                     cc = col;
                     cr = row;
                 }
@@ -463,14 +454,12 @@ public class Lexer implements ILexer {
             }
 		}
 
-        if (cur == State.STR_LIT_1)
-        {
+        if (cur == State.STR_LIT_1) {
             throw new LexicalException();
         }
 
 
-        if (!last_whitespace)
-        {
+        if (!last_whitespace) {
             if (text.length() > 1) {
                 text.deleteCharAt(text.length() - 1);
                 --pos;
@@ -480,8 +469,9 @@ public class Lexer implements ILexer {
 
         String s = text.toString();
 
-        if (s.isEmpty())
+        if (s.isEmpty()) {
             return new Token(EOF, 0, 0, null, new SourceLocation(cr, cc));
+        }
 
         if (last == State.START) {
             return new Token(resolve_final_state_name(cur, s), 0, s.length(), s.toCharArray(), new SourceLocation(cr, cc));

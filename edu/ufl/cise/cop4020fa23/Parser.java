@@ -18,9 +18,6 @@ import java.util.List;
 import edu.ufl.cise.cop4020fa23.ast.*;
 import edu.ufl.cise.cop4020fa23.exceptions.LexicalException;
 import edu.ufl.cise.cop4020fa23.exceptions.SyntaxException;
-import edu.ufl.cise.cop4020fa23.exceptions.SyntaxException;
-
-import javax.crypto.IllegalBlockSizeException;
 
 import static edu.ufl.cise.cop4020fa23.Kind.*;
 
@@ -57,7 +54,7 @@ public class Parser implements IParser {
         Statement,
         GuardedBlock,
         BlockStatement
-    };
+    }
 
     final static ArrayList<HashSet<Kind>> FOLLOW = new ArrayList<>(ASTNodeNames.values().length);
 
@@ -482,7 +479,7 @@ public class Parser implements IParser {
         if (expr2 == null && expr3 == null)
             return expr1;
 
-        return new PostfixExpr(t, expr1, expr2, expr3);
+        return new PostfixExpr(firstToken, expr1, expr2, expr3);
     }
 
     private Expr primaryExpr() throws SyntaxException, LexicalException {
@@ -710,7 +707,7 @@ public class Parser implements IParser {
         throw new SyntaxException();
     }
 
-    private boolean in(Kind... c) throws LexicalException, SyntaxException
+    private boolean in(Kind... c)
     {
         for (Kind a : c)
         {
