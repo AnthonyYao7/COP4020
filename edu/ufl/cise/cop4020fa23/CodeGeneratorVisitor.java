@@ -1,7 +1,10 @@
 package edu.ufl.cise.cop4020fa23;
 
 import edu.ufl.cise.cop4020fa23.ast.*;
+import edu.ufl.cise.cop4020fa23.exceptions.CodeGenException;
 import edu.ufl.cise.cop4020fa23.exceptions.PLCCompilerException;
+
+import java.util.Objects;
 
 public class CodeGeneratorVisitor implements ASTVisitor {
     @Override
@@ -43,19 +46,61 @@ public class CodeGeneratorVisitor implements ASTVisitor {
             sb.append(".equals(");
             rightExpr.visit(this, sb);
             sb.append(')');
-        } else if (op == Kind.EXP) {
-            sb.append("((int)Math.round(Math.pow(");
-            leftExpr.visit(this, sb);
-            sb.append(',');
-            rightExpr.visit(this, sb);
-            sb.append(")))");
-        } else {
+        } else if (op == Kind.EQ) {
             sb.append('(');
             leftExpr.visit(this, sb);
-            sb.append(binaryExpr.getOp().text());
+            sb.append("==");
             rightExpr.visit(this, sb);
             sb.append(')');
+        } else {
+            sb.append('(');
+
+            switch (leftExpr.getType()) {
+                case PIXEL -> {
+                    switch (op) {
+                        case BITAND, BITOR -> {
+                            leftExpr.visit(this, sb);
+                            sb.append(binaryExpr.getOp().text());
+                            rightExpr.visit(this, sb);
+                        }
+                        case EXP -> {
+
+                        }
+                        case MINUS -> {
+                            sb.append("PixelOps.pack(");
+
+                        }
+                        case TIMES, DIV, MOD -> {
+
+                        }
+                    }
+                }
+                case BOOLEAN -> {
+
+                }
+                case INT -> {
+
+                }
+                case IMAGE -> {
+
+                }
+            }
+
+            sb.append(')');
         }
+//        } else if (op == Kind.EXP) {
+//            sb.append("((int)Math.round(Math.pow(");
+//            leftExpr.visit(this, sb);
+//            sb.append(',');
+//            rightExpr.visit(this, sb);
+//            sb.append(")))");
+//        } else {
+//            sb.append('(');
+//            leftExpr.visit(this, sb);
+//            sb.append(binaryExpr.getOp().text());
+//            rightExpr.visit(this, sb);
+//            sb.append(')');
+//        }
 
         return (arg == null ? sb.toString() : null);
     }
@@ -128,10 +173,51 @@ public class CodeGeneratorVisitor implements ASTVisitor {
             sb = new StringBuilder();
         }
 
-        declaration.getNameDef().visit(this, sb);
-        if (declaration.getInitializer() != null) {
-            sb.append('=');
-            declaration.getInitializer().visit(this, sb);
+        NameDef nd = declaration.getNameDef();
+        Expr init = declaration.getInitializer();
+        nd.visit(this, sb);
+
+        if (init == null) {
+            return (arg == null ? sb.toString() : null);
+        }
+
+        sb.append('=');
+
+        Dimension dim = nd.getDimension();
+
+        if (nd.getType() != Type.IMAGE) {
+            init.visit(this, sb);
+        } else {
+            switch (init.getType()) {
+                case STRING -> {
+                    sb.append("FileURLIO.readImage(\"");
+                    init.visit(this, sb);
+
+                    if (dim != null) {
+                        sb.append(',');
+                        dim.getWidth().visit(this, sb);
+                        sb.append(',');
+                        dim.getHeight().visit(this, sb);
+                    }
+                }
+                case IMAGE -> {
+                    if (dim == null) {
+                        sb.append("ImageOps.cloneImage(");
+                        init.visit(this, sb);
+                    } else {
+                        sb.append("ImageOps.copyAndResize(");
+                        init.visit(this, sb);
+                        sb.append(',');
+                        dim.getWidth().visit(this, sb);
+                        sb.append(',');
+                        dim.getHeight().visit(this, sb);
+                    }
+                }
+                default -> {
+                    throw new CodeGenException("Unexpected type");
+                }
+            }
+            sb.append(")");
         }
 
         return (arg == null ? sb.toString() : null);
@@ -342,16 +428,31 @@ public class CodeGeneratorVisitor implements ASTVisitor {
 
     @Override
     public Object visitConstExpr(ConstExpr constExpr, Object arg) throws PLCCompilerException {
-        return null;
+        StringBuilder sb;
+        if (arg != null) {
+            sb = (StringBuilder) arg;
+        } else {
+            sb = new StringBuilder();
+        }
+
+        if (Objects.equals(constExpr.getName(), "Z")) {
+            sb.append("255");
+        } else {
+            sb.append("\"0x\"+Integer.toHexString(Color.");
+            sb.append(constExpr.getName());
+            sb.append(".getRGB())");
+        }
+
+        return (arg == null ? sb.toString() : null);
     }
 
     public String fixTyping(Type type) {
         return switch(type) {
             case INT -> "int";
             case BOOLEAN -> "boolean";
-            case IMAGE -> null;
+            case IMAGE -> "BufferedImage";
             case VOID -> "void";
-            case PIXEL -> null;
+            case PIXEL -> "int";
             case STRING -> "String";
         };
     }
