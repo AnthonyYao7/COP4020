@@ -252,11 +252,6 @@ public class CodeGeneratorVisitor implements ASTVisitor {
             program.getParams().get(i).visit(this, sb);
         }
 
-//        for (NameDef nd : program.getParams()) {
-//            nd.visit(this, sb);
-//            sb.append(',');
-//        }
-
         sb.append("\n)");
         program.getBlock().visit(this, sb);
         sb.append("\n}");
@@ -323,7 +318,6 @@ public class CodeGeneratorVisitor implements ASTVisitor {
         } else {
             sb = new StringBuilder();
         }
-
 
         sb.append("ConsoleIO.write(");
         writeStatement.getExpr().visit(this, sb);
