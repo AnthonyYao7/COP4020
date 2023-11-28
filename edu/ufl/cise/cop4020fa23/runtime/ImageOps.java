@@ -109,7 +109,7 @@ public class ImageOps {
 	}
 
 	public enum OP {
-		PLUS, MINUS, TIMES, DIV, MOD;
+		PLUS, MINUS, TIMES, DIV, MOD, EXP;
 	}
 
 	public enum BoolOP {
@@ -148,6 +148,7 @@ public class ImageOps {
 		case TIMES -> PixelOps.pack(lred * right, lgrn * right, lblu * right);
 		case DIV -> PixelOps.pack(lred / right, lgrn / right, lblu / right);
 		case MOD -> PixelOps.pack(lred % right, lgrn % right, lblu % right);
+		case EXP -> PixelOps.pack((int) Math.round(Math.pow(lred, right)), (int) Math.round(Math.pow(lgrn, right)), (int) Math.round(Math.pow(lblu, right)));
 		default -> throw new IllegalArgumentException("Compiler/runtime error Unexpected value: " + op);
 		};				
 	}
@@ -190,7 +191,25 @@ public class ImageOps {
 		}
 		return result;
 	}
-	
+
+	public static boolean binaryImageImageBooleanOp(BoolOP op, BufferedImage left, BufferedImage right) {
+		int lwidth = left.getWidth();
+		int rwidth = right.getWidth();
+		int lheight = left.getHeight();
+		int rheight = right.getHeight();
+		if (lwidth != rwidth || lheight != rheight) {
+			throw new PLCRuntimeException("Attempting binary operation on images with unequal sizes");
+		}
+		for (int x = 0; x < lwidth; x++) {
+			for (int y = 0; y < lheight; y++) {
+				int leftPixel = left.getRGB(x, y);
+				int rightPixel = right.getRGB(x, y);
+				if (!binaryPackedPixelBooleanOp(op, leftPixel, rightPixel)) return false;
+			}
+		}
+
+		return true;
+	}
 	
 	public static BufferedImage binaryImagePixelOp(OP op, BufferedImage left, int right) {
 		int lwidth = left.getWidth();

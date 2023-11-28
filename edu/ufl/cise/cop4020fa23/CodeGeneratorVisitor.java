@@ -39,68 +39,128 @@ public class CodeGeneratorVisitor implements ASTVisitor {
         Expr rightExpr = binaryExpr.getRightExpr();
         Kind op = binaryExpr.getOpKind();
 
-        if (
-                leftExpr.getType() == Type.STRING &&
-                op == Kind.EQ) {
-            leftExpr.visit(this, sb);
-            sb.append(".equals(");
-            rightExpr.visit(this, sb);
-            sb.append(')');
-        } else if (op == Kind.EQ) {
-            sb.append('(');
-            leftExpr.visit(this, sb);
-            sb.append("==");
-            rightExpr.visit(this, sb);
-            sb.append(')');
-        } else {
-            sb.append('(');
-
-            switch (leftExpr.getType()) {
-                case PIXEL -> {
-                    switch (op) {
-                        case BITAND, BITOR -> {
-                            leftExpr.visit(this, sb);
-                            sb.append(binaryExpr.getOp().text());
-                            rightExpr.visit(this, sb);
+        switch (leftExpr.getType()) {
+            case PIXEL -> {
+                switch (op) {
+                    case BITAND, BITOR -> {
+                        sb.append('(');
+                        leftExpr.visit(this, sb);
+                        sb.append(binaryExpr.getOp().text());
+                        rightExpr.visit(this, sb);
+                        sb.append(')');
+                    }
+                    case PLUS, MINUS, TIMES, DIV, MOD, EXP -> {
+                        if (rightExpr.getType() == Type.INT) {
+                            sb.append("ImageOps.binaryPackedPixelScalarOp(");
+                        } else {
+                            sb.append("ImageOps.binaryPackedPixelPixelOp(");
                         }
-                        case EXP -> {
 
-                        }
-                        case MINUS -> {
-                            sb.append("PixelOps.pack(");
-
-                        }
-                        case TIMES, DIV, MOD -> {
-
-                        }
+                        sb.append(switch (op) {
+                            case PLUS ->  "PLUS";
+                            case MINUS -> "MINUS";
+                            case TIMES -> "TIMES";
+                            case DIV -> "DIV";
+                            case MOD -> "MOD";
+                            case EXP -> "EXP";
+                            default -> throw new CodeGenException("Invalid OP");
+                        });
+                        sb.append(',');
+                        leftExpr.visit(this, sb);
+                        sb.append(',');
+                        rightExpr.visit(this, sb);
+                        sb.append(')');
                     }
                 }
-                case BOOLEAN -> {
-
-                }
-                case INT -> {
-
-                }
-                case IMAGE -> {
-
+            }
+            case BOOLEAN -> {
+                switch (op) {
+                    case AND, OR -> {
+                        sb.append('(');
+                        leftExpr.visit(this, sb);
+                        sb.append(binaryExpr.getOp().text());
+                        rightExpr.visit(this, sb);
+                        sb.append(')');
+                    }
+                    default -> {
+                        throw new CodeGenException("Invalid OP");
+                    }
                 }
             }
+            case INT -> {
+                switch (op) {
+                    case LT, GT, LE, GE, PLUS, MINUS, TIMES, DIV, MOD -> {
+                        sb.append('(');
+                        leftExpr.visit(this, sb);
+                        sb.append(binaryExpr.getOp().text());
+                        rightExpr.visit(this, sb);
+                        sb.append(')');
+                    }
+                    case EXP -> {
+                        sb.append("(int) Math.round(Math.pow(");
+                        leftExpr.visit(this, sb);
+                        sb.append(',');
+                        rightExpr.visit(this, sb);
+                        sb.append("))");
+                    }
+                    default -> {
+                        throw new CodeGenException("Invalid OP");
+                    }
+                }
+            }
+            case IMAGE -> {
+                switch (op) {
+                    case EQ -> {
+                        sb.append("ImageOps.binaryImageImageBooleanOp(EQUALS,");
+                        leftExpr.visit(this, sb);
+                        sb.append(',');
+                        rightExpr.visit(this, sb);
+                        sb.append(')');
+                    }
+                    case PLUS, MINUS, TIMES, DIV, MOD -> {
+                        if (rightExpr.getType() == Type.INT) {
+                            sb.append("ImageOps.binaryImageScalarOp(");
+                        } else {
+                            sb.append("ImageOps.binaryImageImageOp(");
+                        }
 
-            sb.append(')');
+                        sb.append(switch (op) {
+                            case PLUS ->  "PLUS";
+                            case MINUS -> "MINUS";
+                            case TIMES -> "TIMES";
+                            case DIV -> "DIV";
+                            case MOD -> "MOD";
+                            default -> throw new CodeGenException("Invalid OP"); // never happens lol
+                        });
+                        sb.append(',');
+                        leftExpr.visit(this, sb);
+                        sb.append(',');
+                        rightExpr.visit(this, sb);
+                        sb.append(')');
+                    }
+                    default -> {
+                        throw new CodeGenException("Invalid OP");
+                    }
+                }
+            }
+            case STRING -> {
+                switch (op) {
+                    case EQ -> {
+                        leftExpr.visit(this, sb);
+                        sb.append(".equals(");
+                        rightExpr.visit(this, sb);
+                        sb.append(')');
+                    }
+                    case PLUS -> {
+                        sb.append('(');
+                        leftExpr.visit(this, sb);
+                        sb.append('+');
+                        rightExpr.visit(this, sb);
+                        sb.append(')');
+                    }
+                }
+            }
         }
-//        } else if (op == Kind.EXP) {
-//            sb.append("((int)Math.round(Math.pow(");
-//            leftExpr.visit(this, sb);
-//            sb.append(',');
-//            rightExpr.visit(this, sb);
-//            sb.append(")))");
-//        } else {
-//            sb.append('(');
-//            leftExpr.visit(this, sb);
-//            sb.append(binaryExpr.getOp().text());
-//            rightExpr.visit(this, sb);
-//            sb.append(')');
-//        }
 
         return (arg == null ? sb.toString() : null);
     }
@@ -313,7 +373,49 @@ public class CodeGeneratorVisitor implements ASTVisitor {
 
     @Override
     public Object visitPostfixExpr(PostfixExpr postfixExpr, Object arg) throws PLCCompilerException {
-        return null;
+        StringBuilder sb;
+        if (arg != null) {
+            sb = (StringBuilder) arg;
+        } else {
+            sb = new StringBuilder();
+        }
+
+        Expr expr = postfixExpr.primary();
+        ChannelSelector cs = postfixExpr.channel();
+        PixelSelector ps = postfixExpr.pixel();
+
+        if (expr.getType() == Type.PIXEL) {
+            cs.visit(this, sb);
+            expr.visit(this, sb);
+        } else {
+            if (ps != null && cs == null) {
+                sb.append("ImageOps.getRGB(");
+                expr.visit(this, sb);
+                sb.append(',');
+                ps.visit(this, sb);
+                sb.append(')');
+            } else if (ps != null) {
+                cs.visit(this, sb);
+                sb.append("(ImageOps.getRGB(");
+                expr.visit(this, sb);
+                sb.append(',');
+                ps.visit(this, sb);
+                sb.append("))");
+            } else if (cs != null){
+                sb.append("ImageOps.extract");
+                sb.append(switch (cs.color()) {
+                    case RES_red -> "Red";
+                    case RES_green -> "Green";
+                    case RES_blue -> "Blue";
+                    default -> throw new CodeGenException("This never happens...");
+                });
+                sb.append('(');
+                expr.visit(this, sb);
+                sb.append(')');
+            }
+        }
+
+        return (arg == null ? sb.toString() : null);
     }
 
     @Override
@@ -324,6 +426,9 @@ public class CodeGeneratorVisitor implements ASTVisitor {
         sb.append((String) arg);
         sb.append(";\n");
         sb.append("import edu.ufl.cise.cop4020fa23.runtime.ConsoleIO;\n");
+        sb.append("import edu.ufl.cise.cop4020fa23.runtime.ImageOps;\n");
+        sb.append("import edu.ufl.cise.cop4020fa23.runtime.PixelOps;\n");
+        sb.append("import edu.ufl.cise.cop4020fa23.runtime.FileURLIO;\n");
 
         sb.append("\npublic class ");
         sb.append(program.getName());
@@ -385,12 +490,24 @@ public class CodeGeneratorVisitor implements ASTVisitor {
             sb = new StringBuilder();
         }
 
-        IToken op = unaryExpr.getOpToken();
+        Kind op = unaryExpr.getOp();
         Expr expr = unaryExpr.getExpr();
-
         sb.append('(');
-        sb.append(op.text());
-        expr.visit(this, sb);
+
+        switch (op) {
+            case RES_width, RES_height -> {
+                expr.visit(this, sb);
+                sb.append(switch (op) {
+                    case RES_width -> ".getWidth()";
+                    case RES_height -> ".getHeight()";
+                    default -> throw new CodeGenException("Invalid OP");
+                });
+            }
+            default -> {
+                sb.append(unaryExpr.getOpToken().text());
+                expr.visit(this, sb);
+            }
+        }
         sb.append(')');
 
         return (arg == null ? sb.toString() : null);
