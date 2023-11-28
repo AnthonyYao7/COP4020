@@ -4,6 +4,7 @@ import edu.ufl.cise.cop4020fa23.ast.*;
 import edu.ufl.cise.cop4020fa23.exceptions.CodeGenException;
 import edu.ufl.cise.cop4020fa23.exceptions.PLCCompilerException;
 
+import java.util.List;
 import java.util.Objects;
 
 public class CodeGeneratorVisitor implements ASTVisitor {
@@ -19,9 +20,51 @@ public class CodeGeneratorVisitor implements ASTVisitor {
         LValue lv = assignmentStatement.getlValue();
         Expr expr = assignmentStatement.getE();
 
-        lv.visit(this, sb);
-        sb.append('=');
-        expr.visit(this, sb);
+        if(lv.getType() == Type.IMAGE) {
+            if(lv.getPixelSelector() == null && lv.getChannelSelector() == null) {
+                if(expr.getType() == Type.IMAGE){
+                    sb.append("ImageOps.copyInto(");
+                    //later
+                }
+                else if(expr.getType() == Type.PIXEL) {
+                    sb.append("ImageOps.setAllPixels(");
+                    //later
+                }
+                else if(expr.getType() == Type.STRING) {
+                    //later problem
+                }
+            }
+            else if(lv.getChannelSelector() != null) {
+                throw new UnsupportedOperationException("ChannelSelector Not Null Case");
+            }
+            else if(lv.getPixelSelector() != null && lv.getChannelSelector() == null) {
+                //figure it out later
+            }
+        }
+
+        if(lv.getType() == Type.PIXEL && lv.getChannelSelector() != null) {
+            if(lv.getChannelSelector().color() == Kind.RES_red) {
+                sb.append("PixelOps.setRed(");
+            }
+            else if(lv.getChannelSelector().color() == Kind.RES_green) {
+                sb.append("PixelOps.setGreen(");
+            }
+            else if(lv.getChannelSelector().color() == Kind.RES_blue){
+                sb.append("PixelOps.setBlue(");
+            }
+            lv.visit(this, sb);
+            sb.append(',');
+            expr.visit(this, sb);
+            sb.append(',');
+
+//            lv.getPixelSelector().visit(this, arg);
+//            lv.getChannelSelector().visit(this, arg);
+        }
+        else {
+            lv.visit(this, sb);
+            sb.append('=');
+            expr.visit(this, sb);
+        }
 
         return (arg == null ? sb.toString() : null);
     }
@@ -285,7 +328,18 @@ public class CodeGeneratorVisitor implements ASTVisitor {
 
     @Override
     public Object visitDimension(Dimension dimension, Object arg) throws PLCCompilerException {
-        return null;
+        StringBuilder sb;
+        if (arg != null) {
+            sb = (StringBuilder) arg;
+        } else {
+            sb = new StringBuilder();
+        }
+
+        dimension.getWidth().visit(this, sb);
+        sb.append(',');
+        dimension.getHeight().visit(this, sb);
+
+        return (arg == null ? sb.toString() : null);
     }
 
     @Override
@@ -295,7 +349,22 @@ public class CodeGeneratorVisitor implements ASTVisitor {
 
     @Override
     public Object visitExpandedPixelExpr(ExpandedPixelExpr expandedPixelExpr, Object arg) throws PLCCompilerException {
-        return null;
+        StringBuilder sb;
+        if (arg != null) {
+            sb = (StringBuilder) arg;
+        } else {
+            sb = new StringBuilder();
+        }
+
+        sb.append("PixelOps.pack(");
+        expandedPixelExpr.getRed().visit(this, sb);
+        sb.append(',');
+        expandedPixelExpr.getGreen().visit(this, sb);
+        sb.append(',');
+        expandedPixelExpr.getBlue().visit(this, sb);
+        sb.append(')');
+
+        return (arg == null ? sb.toString() : null);
     }
 
     @Override
@@ -319,6 +388,11 @@ public class CodeGeneratorVisitor implements ASTVisitor {
 
     @Override
     public Object visitIfStatement(IfStatement ifStatement, Object arg) throws PLCCompilerException {
+        List<GuardedBlock> guardedBlocks = ifStatement.getGuardedBlocks();
+
+//        for(GuardedBlock block: guardedBlocks) {
+//        }
+
         return null;
     }
 
@@ -368,7 +442,18 @@ public class CodeGeneratorVisitor implements ASTVisitor {
 
     @Override
     public Object visitPixelSelector(PixelSelector pixelSelector, Object arg) throws PLCCompilerException {
-        return null;
+        StringBuilder sb;
+        if (arg != null) {
+            sb = (StringBuilder) arg;
+        } else {
+            sb = new StringBuilder();
+        }
+
+        pixelSelector.xExpr().visit(this, sb);
+        sb.append(',');
+        pixelSelector.yExpr().visit(this, sb);
+
+        return (arg == null ? sb.toString() : null);
     }
 
     @Override
@@ -522,7 +607,13 @@ public class CodeGeneratorVisitor implements ASTVisitor {
             sb = new StringBuilder();
         }
 
-        sb.append("ConsoleIO.write(");
+        if(writeStatement.getExpr().getType() == Type.PIXEL) {
+            sb.append("ConsoleIO.writePixel(");
+        }
+        else {
+            sb.append("ConsoleIO.write(");
+        }
+
         writeStatement.getExpr().visit(this, sb);
         sb.append(')');
 
