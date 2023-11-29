@@ -24,14 +24,25 @@ public class CodeGeneratorVisitor implements ASTVisitor {
             if(lv.getPixelSelector() == null && lv.getChannelSelector() == null) {
                 if(expr.getType() == Type.IMAGE){
                     sb.append("ImageOps.copyInto(");
-                    //later
+                    lv.visit(this, sb);
+                    sb.append(',');
+                    expr.visit(this, sb);
+                    sb.append(")");
                 }
                 else if(expr.getType() == Type.PIXEL) {
                     sb.append("ImageOps.setAllPixels(");
-                    //later
+                    lv.visit(this, sb);
+                    sb.append(',');
+                    expr.visit(this, sb);
+                    sb.append(")");
                 }
                 else if(expr.getType() == Type.STRING) {
-                    //later problem
+                    sb.append("BufferedImage loadedImage = FileURLIO.readImage(");
+                    expr.visit(this, sb);
+                    sb.append("\");\n");
+                    sb.append("ImageOps.copyInto(");
+                    lv.visit(this, sb);
+                    sb.append(", loadedImage)");
                 }
             }
             else if(lv.getChannelSelector() != null) {
@@ -39,10 +50,10 @@ public class CodeGeneratorVisitor implements ASTVisitor {
             }
             else if(lv.getPixelSelector() != null && lv.getChannelSelector() == null) {
                 //figure it out later
+
             }
         }
-
-        if(lv.getType() == Type.PIXEL && lv.getChannelSelector() != null) {
+        else if(lv.getType() == Type.PIXEL && lv.getChannelSelector() != null) {
             if(lv.getChannelSelector().color() == Kind.RES_red) {
                 sb.append("PixelOps.setRed(");
             }
@@ -64,6 +75,17 @@ public class CodeGeneratorVisitor implements ASTVisitor {
             lv.visit(this, sb);
             sb.append('=');
             expr.visit(this, sb);
+        }
+
+        PixelSelector pixelSelector = lv.getPixelSelector();
+        if (pixelSelector != null) {
+            pixelSelector.visit(this, sb);
+        }
+
+        // Check if there is a ChannelSelector and visit it
+        ChannelSelector channelSelector = lv.getChannelSelector();
+        if (channelSelector != null) {
+            channelSelector.visit(this, sb);
         }
 
         return (arg == null ? sb.toString() : null);
@@ -302,6 +324,7 @@ public class CodeGeneratorVisitor implements ASTVisitor {
                         sb.append(',');
                         dim.getHeight().visit(this, sb);
                     }
+                    sb.append("\")");
                 }
                 case IMAGE -> {
                     if (dim == null) {
@@ -315,12 +338,13 @@ public class CodeGeneratorVisitor implements ASTVisitor {
                         sb.append(',');
                         dim.getHeight().visit(this, sb);
                     }
+                    sb.append(")");
                 }
                 default -> {
                     throw new CodeGenException("Unexpected type");
                 }
             }
-            sb.append(")");
+            //sb.append(")");
         }
 
         return (arg == null ? sb.toString() : null);
@@ -344,7 +368,47 @@ public class CodeGeneratorVisitor implements ASTVisitor {
 
     @Override
     public Object visitDoStatement(DoStatement doStatement, Object arg) throws PLCCompilerException {
-        return null;
+        StringBuilder sb;
+        if (arg != null) {
+            sb = (StringBuilder) arg;
+        } else {
+            sb = new StringBuilder();
+        }
+
+        sb.append("do {\n");
+
+        List<GuardedBlock> guardedBlocks = doStatement.getGuardedBlocks();
+
+        for (int i = 0; i < guardedBlocks.size(); i++) {
+            Expr guard = guardedBlocks.get(i).getGuard();
+            Block block = guardedBlocks.get(i).getBlock();
+
+            if(i == 0) {
+                sb.append("if (");
+            }
+            else{
+                sb.append("else if(");
+            }
+            guard.visit(this, sb);
+            sb.append(") {\n");
+            block.visit(this, sb);
+            sb.append("}\n");
+        }
+
+        sb.append("} while (");
+
+        for (int i = 0; i < doStatement.getGuardedBlocks().size(); ++i) {
+            if (i != 0) {
+                sb.append(" || ");
+            }
+            sb.append("(");
+            doStatement.getGuardedBlocks().get(i).getGuard().visit(this, sb);
+            sb.append(")");
+        }
+
+        sb.append(")\n");
+
+        return (arg == null ? sb.toString() : null);
     }
 
     @Override
@@ -388,12 +452,32 @@ public class CodeGeneratorVisitor implements ASTVisitor {
 
     @Override
     public Object visitIfStatement(IfStatement ifStatement, Object arg) throws PLCCompilerException {
+        StringBuilder sb;
+        if (arg != null) {
+            sb = (StringBuilder) arg;
+        } else {
+            sb = new StringBuilder();
+        }
+
         List<GuardedBlock> guardedBlocks = ifStatement.getGuardedBlocks();
 
-//        for(GuardedBlock block: guardedBlocks) {
-//        }
+        for (int i = 0; i < guardedBlocks.size(); i++) {
+            Expr guard = guardedBlocks.get(i).getGuard();
+            Block block = guardedBlocks.get(i).getBlock();
 
-        return null;
+            if(i == 0) {
+                sb.append("if (");
+            }
+            else{
+                sb.append("else if(");
+            }
+            guard.visit(this, sb);
+            sb.append(") {\n");
+            block.visit(this, sb);
+            sb.append("}\n");
+        }
+
+        return (arg == null ? sb.toString() : null);
     }
 
     @Override
@@ -514,6 +598,7 @@ public class CodeGeneratorVisitor implements ASTVisitor {
         sb.append("import edu.ufl.cise.cop4020fa23.runtime.ImageOps;\n");
         sb.append("import edu.ufl.cise.cop4020fa23.runtime.PixelOps;\n");
         sb.append("import edu.ufl.cise.cop4020fa23.runtime.FileURLIO;\n");
+
 
         sb.append("\npublic class ");
         sb.append(program.getName());
