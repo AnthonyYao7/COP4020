@@ -50,7 +50,7 @@ public class ImageOps {
 	public static BufferedImage extractRed(BufferedImage image) {
 		int width = image.getWidth();
 		int height = image.getHeight();
-		BufferedImage newImage = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
+		BufferedImage newImage = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
 		for (int x = 0; x < width; x++) {
 			for (int y = 0; y < height; y++) {
 				int pixel = getRGB(image, x, y);
@@ -109,7 +109,7 @@ public class ImageOps {
 	}
 
 	public enum OP {
-		PLUS, MINUS, TIMES, DIV, MOD, EXP;
+		PLUS, MINUS, TIMES, DIV, MOD;
 	}
 
 	public enum BoolOP {
@@ -148,7 +148,6 @@ public class ImageOps {
 		case TIMES -> PixelOps.pack(lred * right, lgrn * right, lblu * right);
 		case DIV -> PixelOps.pack(lred / right, lgrn / right, lblu / right);
 		case MOD -> PixelOps.pack(lred % right, lgrn % right, lblu % right);
-		case EXP -> PixelOps.pack((int) Math.round(Math.pow(lred, right)), (int) Math.round(Math.pow(lgrn, right)), (int) Math.round(Math.pow(lblu, right)));
 		default -> throw new IllegalArgumentException("Compiler/runtime error Unexpected value: " + op);
 		};				
 	}
@@ -191,25 +190,7 @@ public class ImageOps {
 		}
 		return result;
 	}
-
-	public static boolean binaryImageImageBooleanOp(BoolOP op, BufferedImage left, BufferedImage right) {
-		int lwidth = left.getWidth();
-		int rwidth = right.getWidth();
-		int lheight = left.getHeight();
-		int rheight = right.getHeight();
-		if (lwidth != rwidth || lheight != rheight) {
-			throw new PLCRuntimeException("Attempting binary operation on images with unequal sizes");
-		}
-		for (int x = 0; x < lwidth; x++) {
-			for (int y = 0; y < lheight; y++) {
-				int leftPixel = left.getRGB(x, y);
-				int rightPixel = right.getRGB(x, y);
-				if (!binaryPackedPixelBooleanOp(op, leftPixel, rightPixel)) return false;
-			}
-		}
-
-		return true;
-	}
+	
 	
 	public static BufferedImage binaryImagePixelOp(OP op, BufferedImage left, int right) {
 		int lwidth = left.getWidth();
@@ -294,14 +275,34 @@ public class ImageOps {
 	 * @param destImage
 	 */
 	public static final void copyInto(BufferedImage sourceImage, BufferedImage destImage) {		
+		int destWidth = destImage.getWidth();
+		int destHeight = destImage.getHeight();
+		if (destWidth != sourceImage.getWidth() || destHeight != sourceImage.getHeight()) {
+		  copyIntoNoResize(copyAndResize(sourceImage,destWidth, destHeight), destImage);
+		}
+		else {
+			copyIntoNoResize(sourceImage, destImage);
+		}
+				
+	}
+	
+	/*Copies the pixels of the soureImage into the pixels of the destImage
+	 * 
+	 * Precondition:  sourceImage and destImage are the same size
+	 * This routine is not public.  Generated code should use copyInto.
+	 */
+	static void copyIntoNoResize(BufferedImage sourceImage, BufferedImage destImage) {
         int w = sourceImage.getWidth();
 		int h = sourceImage.getHeight();
-		int maxX = destImage.getWidth();
-		int maxY = destImage.getHeight();
-		AffineTransform at = new AffineTransform();
-		at.scale(((float) maxX) / w, ((float) maxY) / h);
-		AffineTransformOp scaleOp = new AffineTransformOp(at, AffineTransformOp.TYPE_NEAREST_NEIGHBOR);
-		scaleOp.filter(sourceImage, destImage);
+		int destWidth = destImage.getWidth();
+		int destHeight = destImage.getHeight();		
+		if ( (w != destWidth) || h != destHeight) throw new PLCRuntimeException("copyIntoNoResize source and destination image have different sizes");
+		for (int y = 0; y < destHeight; y++) {
+			for (int x = 0; x < destWidth; x++) {
+				int pixel = sourceImage.getRGB(x, y);
+				destImage.setRGB(x, y, pixel);
+			}
+		}
 	}
 	
 	/**
