@@ -307,10 +307,12 @@ public class TypeCheckVisitor implements ASTVisitor {
             check(yExpr instanceof IdentExpr || yExpr instanceof NumLitExpr, pixelSelector, "xExpr is not Ident or NumLit");
 
             if (
-                xExpr instanceof IdentExpr && st.lookup(((IdentExpr) xExpr).getName()) == null ||
-                yExpr instanceof IdentExpr && st.lookup(((IdentExpr) yExpr).getName()) == null) {
-                st.insert(new SyntheticNameDef(((IdentExpr) xExpr).getName()));
-                st.insert(new SyntheticNameDef(((IdentExpr) yExpr).getName()));
+                    xExpr instanceof IdentExpr && st.lookup(((IdentExpr) xExpr).getName()) == null ||
+                    yExpr instanceof IdentExpr && st.lookup(((IdentExpr) yExpr).getName()) == null) {
+                SyntheticNameDef xSyntheticNameDef = new SyntheticNameDef(((IdentExpr) xExpr).getName());
+                SyntheticNameDef ySyntheticNameDef = new SyntheticNameDef(((IdentExpr) yExpr).getName());
+                xSyntheticNameDef.visit(this, null);
+                ySyntheticNameDef.visit(this, null);
             }
         }
 
@@ -331,10 +333,13 @@ public class TypeCheckVisitor implements ASTVisitor {
 
         Type inferPostfixExprType = getInferPostfixExprType(ps, cs, postfixExprType);
 
-        assert ps != null;
-        ps.visit(this, arg);
-        assert cs != null;
-        cs.visit(this, arg);
+        if (ps != null) {
+            ps.visit(this, arg);
+        }
+
+        if (cs != null) {
+            cs.visit(this, arg);
+        }
 
         postfixExpr.setType(inferPostfixExprType);
         return inferPostfixExprType;

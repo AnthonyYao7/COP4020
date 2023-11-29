@@ -28,8 +28,8 @@ public class NameDef extends AST {
 
 	/**
 	 * @param firstToken
-	 * @param type
-	 * @param ident
+	 * @param typeToken
+	 * @param identToken
 	 * @param dimension
 	 */
 	public NameDef(IToken firstToken, IToken typeToken, Dimension dimension, IToken identToken ) {
@@ -112,7 +112,7 @@ public class NameDef extends AST {
 
 	public String getJavaName() {
 		if (javaName != null) return javaName;
-		throw new IllegalStateException("javaName not initialized");
+		throw new IllegalStateException("javaName not initialized: " + getName());
 	}
 	
 	

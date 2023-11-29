@@ -64,13 +64,13 @@ public class SyntheticNameDef extends NameDef {
 
 	@Override
 	public 
-	IToken getIdentToken() {throw new UnsupportedOperationException();}
+	IToken getIdentToken() { return null; }
 	
 	@Override
 	public 
-	IToken getTypeToken() {throw new UnsupportedOperationException();}
+	IToken getTypeToken() { return null; }
 	
 	@Override
 	public
-	Dimension getDimension() {throw new UnsupportedOperationException();}
+	Dimension getDimension() { return null; }
 }

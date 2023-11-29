@@ -33,7 +33,11 @@ public class PixelOps {
 				| (truncate(bluVal) << SHIFT_BLUE));
 		return pixel;
 	}
-	
+
+	public static int pack(int val) {
+		return pack(val, val, val);
+	}
+
 	public static int red(int pixel) {
 		return (pixel & SELECT_RED) >> SHIFT_RED;
 	}

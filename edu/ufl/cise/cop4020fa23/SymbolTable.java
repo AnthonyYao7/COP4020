@@ -53,7 +53,8 @@ public class SymbolTable {
         for (SymbolTableEntry ste : ll) {
             int index = Collections.binarySearch(scopeStack, ste.scopeNum);
             if (index < 0) {
-                continue;
+                index = -index + 1;
+                if (index == scopeStack.size()) continue;
             }
             if (index > highest) {
                 highest = index;
