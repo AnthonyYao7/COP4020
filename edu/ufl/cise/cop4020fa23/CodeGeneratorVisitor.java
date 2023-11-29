@@ -1,9 +1,11 @@
 package edu.ufl.cise.cop4020fa23;
 
+import edu.ufl.cise.cop4020fa23.ast.Dimension;
 import edu.ufl.cise.cop4020fa23.ast.*;
 import edu.ufl.cise.cop4020fa23.exceptions.CodeGenException;
 import edu.ufl.cise.cop4020fa23.exceptions.PLCCompilerException;
 
+import java.awt.*;
 import java.util.List;
 import java.util.Objects;
 
@@ -23,18 +25,18 @@ public class CodeGeneratorVisitor implements ASTVisitor {
         if(lv.getType() == Type.IMAGE) {
             if(lv.getPixelSelector() == null && lv.getChannelSelector() == null) {
                 if(expr.getType() == Type.IMAGE){
-                    sb.append("ImageOps.copyInto(");
+                    sb.append("ImageOps.copyInto((BufferedImage)");
                     lv.visit(this, sb);
-                    sb.append(',');
+                    sb.append(", (BufferedImage)");
                     expr.visit(this, sb);
-                    sb.append(")");
+                    sb.append(')');
                 }
                 else if(expr.getType() == Type.PIXEL) {
-                    sb.append("ImageOps.setAllPixels(");
+                    sb.append("ImageOps.setAllPixels((BufferedImage)");
                     lv.visit(this, sb);
-                    sb.append(',');
+                    sb.append(", (BufferedImage)");
                     expr.visit(this, sb);
-                    sb.append(")");
+                    sb.append(')');
                 }
                 else if(expr.getType() == Type.STRING) {
                     sb.append("BufferedImage loadedImage = FileURLIO.readImage(");
@@ -67,9 +69,6 @@ public class CodeGeneratorVisitor implements ASTVisitor {
             sb.append(',');
             expr.visit(this, sb);
             sb.append(',');
-
-//            lv.getPixelSelector().visit(this, arg);
-//            lv.getChannelSelector().visit(this, arg);
         }
         else {
             lv.visit(this, sb);
@@ -118,7 +117,7 @@ public class CodeGeneratorVisitor implements ASTVisitor {
                         if (rightExpr.getType() == Type.INT) {
                             sb.append("ImageOps.binaryPackedPixelScalarOp(");
                         } else {
-                            sb.append("ImageOps.binaryPackedPixelPixelOp(");
+                            sb.append("ImageOps.binaryPackedPixelPixelOp(ImageOps.OP.");
                         }
 
                         sb.append(switch (op) {
@@ -176,7 +175,7 @@ public class CodeGeneratorVisitor implements ASTVisitor {
             case IMAGE -> {
                 switch (op) {
                     case EQ -> {
-                        sb.append("ImageOps.binaryImageImageBooleanOp(EQUALS,");
+                        sb.append("ImageOps.binaryImageImageBooleanOp(ImageOPs.BoolOP.EQUALS,");
                         leftExpr.visit(this, sb);
                         sb.append(',');
                         rightExpr.visit(this, sb);
@@ -184,9 +183,9 @@ public class CodeGeneratorVisitor implements ASTVisitor {
                     }
                     case PLUS, MINUS, TIMES, DIV, MOD -> {
                         if (rightExpr.getType() == Type.INT) {
-                            sb.append("ImageOps.binaryImageScalarOp(");
+                            sb.append("ImageOps.binaryImageScalarOp(ImageOps.OP.");
                         } else {
-                            sb.append("ImageOps.binaryImageImageOp(");
+                            sb.append("ImageOps.binaryImageImageOp(ImageOps.OP.");
                         }
 
                         sb.append(switch (op) {
@@ -491,6 +490,15 @@ public class CodeGeneratorVisitor implements ASTVisitor {
 
         sb.append(lValue.getNameDef().getJavaName());
 
+//        PixelSelector ps = lValue.getPixelSelector();
+//        if (ps != null) {
+//            ps.visit(this, lValue);
+//        }
+//        ChannelSelector cs = lValue.getChannelSelector();
+//        if (cs != null) {
+//            cs.visit(this, arg);
+//        }
+
         return (arg == null ? sb.toString() : null);
     }
 
@@ -731,9 +739,70 @@ public class CodeGeneratorVisitor implements ASTVisitor {
         if (Objects.equals(constExpr.getName(), "Z")) {
             sb.append("255");
         } else {
-            sb.append("\"0x\"+Integer.toHexString(Color.");
-            sb.append(constExpr.getName());
-            sb.append(".getRGB())");
+//            sb.append("\"0x\"+Integer.toHexString(Color.");
+//            sb.append(constExpr.getName());
+//            sb.append(".getRGB())");
+
+            sb.append("0x");
+            String color = constExpr.getName();
+
+            switch (color) {
+                case "RED" -> {
+                    String hexstring = Integer.toHexString(Color.RED.getRGB());
+                    sb.append(hexstring);
+                }
+                case "BLUE" -> {
+                    String hexstring = Integer.toHexString(Color.BLUE.getRGB());
+                    sb.append(hexstring);
+                }
+                case "GREEN" -> {
+                    String hexstring = Integer.toHexString(Color.GREEN.getRGB());
+                    sb.append(hexstring);
+                }
+                case "BLACK" -> {
+                    String hexstring = Integer.toHexString(Color.BLACK.getRGB());
+                    sb.append(hexstring);
+                }
+                case "CYAN" -> {
+                    String hexstring = Integer.toHexString(Color.CYAN.getRGB());
+                    sb.append(hexstring);
+                }
+                case "DARK_GRAY" -> {
+                    String hexstring = Integer.toHexString(Color.DARK_GRAY.getRGB());
+                    sb.append(hexstring);
+                }
+                case "GRAY" -> {
+                    String hexstring = Integer.toHexString(Color.GRAY.getRGB());
+                    sb.append(hexstring);
+                }
+                case "LIGHT_GRAY" -> {
+                    String hexstring = Integer.toHexString(Color.LIGHT_GRAY.getRGB());
+                    sb.append(hexstring);
+                }
+                case "MAGENTA" -> {
+                    String hexstring = Integer.toHexString(Color.MAGENTA.getRGB());
+                    sb.append(hexstring);
+                }
+                case "ORANGE" -> {
+                    String hexstring = Integer.toHexString(Color.ORANGE.getRGB());
+                    sb.append(hexstring);
+                }
+                case "PINK" -> {
+                    String hexstring = Integer.toHexString(Color.PINK.getRGB());
+                    sb.append(hexstring);
+                }
+                case "WHITE" -> {
+                    String hexstring = Integer.toHexString(Color.WHITE.getRGB());
+                    sb.append(hexstring);
+                }
+                case "YELLOW" -> {
+                    String hexstring = Integer.toHexString(Color.YELLOW.getRGB());
+                    sb.append(hexstring);
+                }
+                default -> {
+                    throw new CodeGenException("Color not recognized");
+                }
+            }
         }
 
         return (arg == null ? sb.toString() : null);
