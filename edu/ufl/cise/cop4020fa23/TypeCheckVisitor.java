@@ -306,12 +306,13 @@ public class TypeCheckVisitor implements ASTVisitor {
             check(xExpr instanceof IdentExpr || xExpr instanceof NumLitExpr, pixelSelector, "xExpr is not Ident or NumLit");
             check(yExpr instanceof IdentExpr || yExpr instanceof NumLitExpr, pixelSelector, "xExpr is not Ident or NumLit");
 
-            if (
-                    xExpr instanceof IdentExpr && st.lookup(((IdentExpr) xExpr).getName()) == null ||
-                    yExpr instanceof IdentExpr && st.lookup(((IdentExpr) yExpr).getName()) == null) {
+            if (xExpr instanceof IdentExpr && st.lookup(((IdentExpr) xExpr).getName()) == null) {
                 SyntheticNameDef xSyntheticNameDef = new SyntheticNameDef(((IdentExpr) xExpr).getName());
-                SyntheticNameDef ySyntheticNameDef = new SyntheticNameDef(((IdentExpr) yExpr).getName());
                 xSyntheticNameDef.visit(this, null);
+            }
+
+            if (yExpr instanceof IdentExpr && st.lookup(((IdentExpr) yExpr).getName()) == null) {
+                SyntheticNameDef ySyntheticNameDef = new SyntheticNameDef(((IdentExpr) yExpr).getName());
                 ySyntheticNameDef.visit(this, null);
             }
         }

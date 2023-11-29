@@ -31,14 +31,16 @@ public class SymbolTable {
 
         LinkedList<SymbolTableEntry> ll = table.computeIfAbsent(ident, k -> new LinkedList<>());
 
+        int current_scope = scopeStack.get(scopeStack.size() - 1);
+
         for (SymbolTableEntry ste : ll) {
-            if (ste.scopeNum == scope) {
+            if (ste.scopeNum == current_scope) {
                 throw new TypeCheckException();
             }
         }
 
-        ll.push(new SymbolTableEntry(scope, nameDef));
-        return scope;
+        ll.push(new SymbolTableEntry(current_scope, nameDef));
+        return current_scope;
     }
 
     public NameDef lookup(String ident) {
@@ -53,8 +55,9 @@ public class SymbolTable {
         for (SymbolTableEntry ste : ll) {
             int index = Collections.binarySearch(scopeStack, ste.scopeNum);
             if (index < 0) {
-                index = -index + 1;
-                if (index == scopeStack.size()) continue;
+//                index = -index + 1;
+//                if (index == scopeStack.size()) continue;
+                continue;
             }
             if (index > highest) {
                 highest = index;
