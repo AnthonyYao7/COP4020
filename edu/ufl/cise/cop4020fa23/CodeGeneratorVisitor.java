@@ -22,19 +22,22 @@ public class CodeGeneratorVisitor implements ASTVisitor {
         LValue lv = assignmentStatement.getlValue();
         Expr expr = assignmentStatement.getE();
 
-        if(lv.getType() == Type.IMAGE) {
+
+        if(lv.getVarType() == Type.IMAGE) {
             if(lv.getPixelSelector() == null && lv.getChannelSelector() == null) {
                 if(expr.getType() == Type.IMAGE){
-                    sb.append("ImageOps.copyInto((BufferedImage)");
                     lv.visit(this, sb);
-                    sb.append(", (BufferedImage)");
+                    sb.append(" = ImageOps.copyInto(");
+                    lv.visit(this, sb);
+                    sb.append(", ");
                     expr.visit(this, sb);
                     sb.append(')');
                 }
                 else if(expr.getType() == Type.PIXEL) {
-                    sb.append("ImageOps.setAllPixels((BufferedImage)");
                     lv.visit(this, sb);
-                    sb.append(", (BufferedImage)");
+                    sb.append(" = ImageOps.setAllPixels(");
+                    lv.visit(this, sb);
+                    sb.append(", ");
                     expr.visit(this, sb);
                     sb.append(')');
                 }
@@ -42,7 +45,8 @@ public class CodeGeneratorVisitor implements ASTVisitor {
                     sb.append("BufferedImage loadedImage = FileURLIO.readImage(");
                     expr.visit(this, sb);
                     sb.append(");\n");
-                    sb.append("ImageOps.copyInto(");
+                    lv.visit(this, sb);
+                    sb.append(" = ImageOps.copyInto(");
                     lv.visit(this, sb);
                     sb.append(", loadedImage)");
                 }
@@ -51,11 +55,38 @@ public class CodeGeneratorVisitor implements ASTVisitor {
                 throw new UnsupportedOperationException("ChannelSelector Not Null Case");
             }
             else if(lv.getPixelSelector() != null && lv.getChannelSelector() == null) {
-                //figure it out later
-
+                sb.append("for(");
+                lv.getPixelSelector().xExpr().visit(this, sb);
+                sb.append(" = 0; ");
+                lv.getPixelSelector().xExpr().visit(this, sb);
+                sb.append(" < ");
+                lv.getNameDef().visit(this, sb);
+                sb.append(".getWidth();");
+                lv.getPixelSelector().xExpr().visit(this, sb);
+                sb.append("++) {");
+                sb.append("for(");
+                lv.getPixelSelector().yExpr().visit(this, sb);
+                sb.append(" = 0; ");
+                lv.getPixelSelector().yExpr().visit(this, sb);
+                sb.append(" < ");
+                lv.getNameDef().visit(this, sb);
+                sb.append(".getHeight();");
+                lv.getPixelSelector().yExpr().visit(this, sb);
+                sb.append("++) {");
+                sb.append("ImageOps.setRGB(");
+                lv.getNameDef().visit(this, sb);
+                sb.append(',');
+                lv.getPixelSelector().xExpr().visit(this, sb);
+                sb.append(',');
+                lv.getPixelSelector().yExpr().visit(this, sb);
+                sb.append(',');
+                expr.visit(this, sb);
+                sb.append(")}}");
             }
         }
-        else if(lv.getType() == Type.PIXEL && lv.getChannelSelector() != null) {
+        else if(lv.getVarType() == Type.PIXEL && lv.getChannelSelector() != null) {
+            lv.visit(this, sb);
+            sb.append('=');
             if(lv.getChannelSelector().color() == Kind.RES_red) {
                 sb.append("PixelOps.setRed(");
             }
@@ -68,12 +99,25 @@ public class CodeGeneratorVisitor implements ASTVisitor {
             lv.visit(this, sb);
             sb.append(',');
             expr.visit(this, sb);
-            sb.append(',');
+            sb.append(')');
+
         }
         else {
-            lv.visit(this, sb);
-            sb.append('=');
-            expr.visit(this, sb);
+            if(expr.getType() == Type.INT && lv.getType() == Type.PIXEL){
+                lv.visit(this, sb);
+                sb.append("= PixelOps.pack(");
+                expr.visit(this, sb);
+                sb.append(',');
+                expr.visit(this, sb);
+                sb.append(',');
+                expr.visit(this, sb);
+                sb.append(')');
+            }
+            else {
+                lv.visit(this, sb);
+                sb.append('=');
+                expr.visit(this, sb);
+            }
         }
 
         PixelSelector pixelSelector = lv.getPixelSelector();
@@ -81,7 +125,6 @@ public class CodeGeneratorVisitor implements ASTVisitor {
             pixelSelector.visit(this, sb);
         }
 
-        // Check if there is a ChannelSelector and visit it
         ChannelSelector channelSelector = lv.getChannelSelector();
         if (channelSelector != null) {
             channelSelector.visit(this, sb);
@@ -115,7 +158,7 @@ public class CodeGeneratorVisitor implements ASTVisitor {
                     }
                     case PLUS, MINUS, TIMES, DIV, MOD, EXP -> {
                         if (rightExpr.getType() == Type.INT) {
-                            sb.append("ImageOps.binaryPackedPixelScalarOp(");
+                            sb.append("ImageOps.binaryPackedPixelScalarOp(ImageOps.OP.");
                         } else {
                             sb.append("ImageOps.binaryPackedPixelPixelOp(ImageOps.OP.");
                         }
