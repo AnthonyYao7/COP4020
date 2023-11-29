@@ -41,7 +41,7 @@ public class CodeGeneratorVisitor implements ASTVisitor {
                 else if(expr.getType() == Type.STRING) {
                     sb.append("BufferedImage loadedImage = FileURLIO.readImage(");
                     expr.visit(this, sb);
-                    sb.append("\");\n");
+                    sb.append(");\n");
                     sb.append("ImageOps.copyInto(");
                     lv.visit(this, sb);
                     sb.append(", loadedImage)");
@@ -314,7 +314,7 @@ public class CodeGeneratorVisitor implements ASTVisitor {
         } else {
             switch (init.getType()) {
                 case STRING -> {
-                    sb.append("FileURLIO.readImage(\"");
+                    sb.append("FileURLIO.readImage(");
                     init.visit(this, sb);
 
                     if (dim != null) {
@@ -323,7 +323,7 @@ public class CodeGeneratorVisitor implements ASTVisitor {
                         sb.append(',');
                         dim.getHeight().visit(this, sb);
                     }
-                    sb.append("\")");
+                    //sb.append(")");
                 }
                 case IMAGE -> {
                     if (dim == null) {
@@ -337,13 +337,13 @@ public class CodeGeneratorVisitor implements ASTVisitor {
                         sb.append(',');
                         dim.getHeight().visit(this, sb);
                     }
-                    sb.append(")");
+                    //sb.append(")");
                 }
                 default -> {
                     throw new CodeGenException("Unexpected type");
                 }
             }
-            //sb.append(")");
+            sb.append(")");
         }
 
         return (arg == null ? sb.toString() : null);
@@ -606,6 +606,7 @@ public class CodeGeneratorVisitor implements ASTVisitor {
         sb.append("import edu.ufl.cise.cop4020fa23.runtime.ImageOps;\n");
         sb.append("import edu.ufl.cise.cop4020fa23.runtime.PixelOps;\n");
         sb.append("import edu.ufl.cise.cop4020fa23.runtime.FileURLIO;\n");
+        sb.append("import java.awt.image.BufferedImage;\n");
 
 
         sb.append("\npublic class ");

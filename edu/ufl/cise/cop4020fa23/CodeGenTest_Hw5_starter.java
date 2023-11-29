@@ -1,19 +1,18 @@
 package edu.ufl.cise.cop4020fa23;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
-import java.awt.Color;
-import java.awt.image.BufferedImage;
-import java.io.IOException;
-
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Test;
-
 import edu.ufl.cise.cop4020fa23.DynamicJavaCompileAndExecute.PLCLangExec;
 import edu.ufl.cise.cop4020fa23.runtime.ConsoleIO;
 import edu.ufl.cise.cop4020fa23.runtime.FileURLIO;
 import edu.ufl.cise.cop4020fa23.runtime.ImageOps;
 import edu.ufl.cise.cop4020fa23.runtime.PixelOps;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
+
+import java.awt.*;
+import java.awt.image.BufferedImage;
+import java.io.IOException;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class CodeGenTest_Hw5_starter {
 
@@ -28,7 +27,7 @@ class CodeGenTest_Hw5_starter {
 	// makes it easy to turn output on and off (and less typing than
 	// System.out.println)
 	static final boolean VERBOSE = true;
-	static final boolean WAIT_FOR_INPUT = true;
+	static final boolean WAIT_FOR_INPUT = false;
 
 	void show(Object obj) {
 		if (VERBOSE) {
